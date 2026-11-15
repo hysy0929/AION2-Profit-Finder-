@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#11151c">
+<title>AION2 利益ファインダー</title>
+<style>
+:root{
+  --bg:#11151c; --panel:#1a2029; --panel2:#222a35; --line:#2e3846; --text:#e6ebf2; --sub:#9aa6b6;
+  --gold:#e8c26a; --up:#5fd38d; --down:#ff7a7a; --blue:#78b4ff; --warn:#f0a95a;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif}
+header{position:sticky;top:0;z-index:5;background:rgba(17,21,28,.96);backdrop-filter:blur(6px);border-bottom:1px solid var(--line);padding:10px 12px 0;padding-top:max(10px,env(safe-area-inset-top))}
+.top{display:flex;gap:8px;align-items:center}
+h1{font-size:16px;margin:0;color:var(--gold);letter-spacing:.02em;white-space:nowrap}
+select,input,button{font:inherit;color:var(--text);background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:7px 9px}
+input{width:100%}
+button{cursor:pointer}
+button.primary{background:var(--gold);color:#1a1405;border-color:var(--gold);font-weight:600}
+.top select{margin-left:auto;max-width:55%}
+.meta{font-size:12px;color:var(--sub);margin:4px 0 6px}
+nav{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}
+nav button{flex:1;border:0;border-radius:8px 8px 0 0;background:transparent;color:var(--sub);padding:8px 6px;white-space:nowrap}
+nav button.on{background:var(--panel);color:var(--gold);font-weight:600}
+main{padding:10px 12px 40px;max-width:760px;margin:0 auto}
+.bar{display:flex;gap:8px;margin-bottom:10px;align-items:center}
+.bar>*{flex:1}
+.hint{font-size:12.5px;color:var(--sub);margin:0 0 10px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px}
+.row{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.name{font-weight:600}
+.cat{font-size:12px;color:var(--sub)}
+.big{font-size:18px;font-weight:700}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:2px 12px;font-size:13.5px;margin-top:6px}
+.grid span:nth-child(odd){color:var(--sub)}
+.grid span:nth-child(even){text-align:right;font-variant-numeric:tabular-nums}
+.up{color:var(--up)} .down{color:var(--down)} .gold{color:var(--gold)}
+.tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.tag{font-size:11.5px;padding:1px 7px;border-radius:99px;background:var(--panel2);color:var(--sub);border:1px solid var(--line)}
+.tag.good{color:var(--up);border-color:#2f6a48} .tag.bad{color:var(--down);border-color:#7a3a3a} .tag.warn{color:var(--warn);border-color:#7a5a2f}
+svg.spark{width:100%;height:34px;margin-top:6px;display:block}
+.empty{color:var(--sub);text-align:center;padding:30px 10px}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+td,th{padding:6px 4px;border-bottom:1px solid var(--line);text-align:right}
+td:first-child,th:first-child{text-align:left}
+th{color:var(--sub);font-weight:500}
+.form label{display:block;font-size:12.5px;color:var(--sub);margin:8px 0 3px}
+.mat{display:grid;grid-template-columns:1fr 70px 36px;gap:6px;margin-bottom:6px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+details summary{cursor:pointer;color:var(--blue)}
+.small{font-size:12px;color:var(--sub)}
+.right{text-align:right}
+</style>
+</head>
+<body>
+<header>
+  <div class="top">
+    <h1>AION2 利益ファインダー</h1>
+    <select id="server" aria-label="サーバー"></select>
+  </div>
+  <div class="meta" id="meta">読み込み中…</div>
+  <nav id="tabs">
+    <button data-tab="flip" class="on">転売</button>
+    <button data-tab="sell">売り時</button>
+    <button data-tab="craft">製作</button>
+    <button data-tab="quna">クーナ</button>
+    <button data-tab="settings">設定</button>
+  </nav>
+</header>
+<main id="main"></main>
+<datalist id="itemlist"></datalist>
+
+<script>
+"use strict";
+// ── 状態 ──────────────────────────────────────────────
+const LS = {
+  get(k, d){ try{ const v = localStorage.getItem("a2pf."+k); return v==null ? d : JSON.parse(v); }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem("a2pf."+k, JSON.stringify(v)); }catch(e){} }
+};
+const DEFAULTS = { tax:10, fee:2, minSold:3, minProfit:5000, minMargin:5, conservative:true, flipSort:"daily", yenPerQuna:"" };
+let S = Object.assign({}, DEFAULTS, LS.get("settings", {}));
+let INDEX = null, DATA = null, ITEMS = [], BYKEY = {}, TAB = LS.get("tab", "flip");
+let RECIPES = LS.get("recipes", null);
+let CHESTS = LS.get("chests", [[400000,185],[2000000,930],[10000000,4998]]);
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+// ── 書式 ──────────────────────────────────────────────
+function kina(n){
+  if(n == null || !isFinite(n)) return "—";
+  const a = Math.abs(n), sign = n < 0 ? "-" : "";
+  if(a >= 1e8) return sign + (a/1e8).toFixed(a>=1e9?1:2).replace(/\.?0+$/,"") + "億";
+  if(a >= 1e4) return sign + (a/1e4).toFixed(a>=1e6?0:1).replace(/\.0$/,"") + "万";
+  return sign + Math.round(a).toLocaleString("ja-JP");
+}
+const full = n => n == null || !isFinite(n) ? "—" : Math.round(n).toLocaleString("ja-JP");
+const pct = (x, d=0) => x == null || !isFinite(x) ? "—" : (x>0?"+":"") + (x*100).toFixed(d) + "%";
+const cls = x => x > 0 ? "up" : x < 0 ? "down" : "";
+function ago(ts){
+  if(!ts) return "不明";
+  const m = Math.round((Date.now() - new Date(ts).getTime())/60000);
+  if(m < 60) return m + "分前";
+  if(m < 48*60) return Math.round(m/60) + "時間前";
+  return Math.round(m/1440) + "日前";
+}
+const netRate = () => 1 - S.tax/100 - S.fee/100;
+
+function spark(sp){
+  if(!sp || sp.filter(v=>v!=null).length < 2) return "";
+  const v = sp.filter(x=>x!=null), lo = Math.min(...v), hi = Math.max(...v), W = 300, H = 34, n = sp.length;
+  let d = "", pen = false;
+  sp.forEach((y,i)=>{
+    if(y == null){ pen = false; return; }
+    const X = (i/(n-1))*W, Y = hi===lo ? H/2 : H-3 - (y-lo)/(hi-lo)*(H-6);
+    d += (pen ? "L" : "M") + X.toFixed(1) + " " + Y.toFixed(1);
+    pen = true;
+  });
+  return `<svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-label="7日間の最安値推移"><path d="${d}" fill="none" stroke="var(--blue)" stroke-width="1.6" vector-effect="non-scaling-stroke"/></svg>`;
+}
+
+// ── データ ────────────────────────────────────────────
+async function getJSON(path){
+  const r = await fetch(path + (path.includes("?")?"&":"?") + "v=" + Math.floor(Date.now()/300000), {cache:"no-store"});
+  if(!r.ok) throw new Error(path + " " + r.status);
+  return r.json();
+}
+async function boot(){
+  try{ INDEX = await getJSON("data/index.json"); }
+  catch(e){ $("#meta").textContent = "データがまだありません（収集を一度実行してください）"; INDEX = {servers:[], all_servers:[]}; }
+  if(INDEX.defaults && !LS.get("settings", null)){
+    S.tax = Math.round(INDEX.defaults.tax_rate*1000)/10; S.fee = Math.round(INDEX.defaults.fee_rate*1000)/10;
+  }
+  if(RECIPES == null){
+    try{ RECIPES = await getJSON("recipes.json"); }catch(e){ RECIPES = []; }
+    if(!Array.isArray(RECIPES)) RECIPES = [];
+  }
+  const sel = $("#server");
+  sel.innerHTML = (INDEX.servers||[]).map(s=>`<option value="${esc(s.server_id)}">${esc(s.name)}${s.faction?"・"+esc(s.faction):""}</option>`).join("") || `<option value="">サーバー未設定</option>`;
+  const saved = LS.get("server", null);
+  if(saved && [...sel.options].some(o=>o.value==saved)) sel.value = saved;
+  sel.onchange = () => { LS.set("server", sel.value); loadServer(); };
+  document.querySelectorAll("#tabs button").forEach(b => b.onclick = () => { TAB = b.dataset.tab; LS.set("tab", TAB); render(); });
+  await loadServer();
+}
+async function loadServer(){
+  const sid = $("#server").value;
+  if(!sid){ DATA = null; ITEMS = []; BYKEY = {}; $("#meta").textContent = "config.json にサーバーを設定してください（設定タブに一覧あり）"; render(); return; }
+  try{ DATA = await getJSON(`data/s/${sid}.json`); }
+  catch(e){ DATA = null; ITEMS = []; BYKEY = {}; $("#meta").textContent = "このサーバーのデータを読めませんでした"; render(); return; }
+  ITEMS = DATA.items || []; BYKEY = Object.fromEntries(ITEMS.map(i=>[i.k,i]));
+  $("#itemlist").innerHTML = ITEMS.map(i=>`<option value="${esc(i.n)} #${esc(i.k)}"></option>`).join("");
+  $("#meta").textContent = `相場 ${ago(DATA.captured_at)}の値 ・ ${ITEMS.length}品目 ・ 出典 aion2.exchange（非公式）`;
+  render();
+}
+
+// ── 計算 ──────────────────────────────────────────────
+// 売れる見込み価格：24h販売平均と7日中央値。慎重モードでは低いほうを使う
+function refPrice(it){
+  const c = [it.a, it.m7].filter(v => v != null && v > 0);
+  if(!c.length) return null;
+  return S.conservative ? Math.min(...c) : (it.a || it.m7);
+}
+function flipOf(it){
+  if(!it.p || !it.s) return null;
+  const ref = refPrice(it);
+  if(!ref) return null;
+  const profit = ref*netRate() - it.p;
+  return { ref, profit, margin: profit/it.p, daily: profit*Math.min(it.s, 20) };
+}
+
+// ── 画面：転売 ───────────────────────────────────────
+function viewFlip(){
+  const rows = [];
+  for(const it of ITEMS){
+    const f = flipOf(it);
+    if(!f) continue;
+    if(it.s < S.minSold || f.profit < S.minProfit || f.margin < S.minMargin/100) continue;
+    rows.push([it, f]);
+  }
+  const key = {daily:r=>r[1].daily, unit:r=>r[1].profit, margin:r=>r[1].margin}[S.flipSort] || (r=>r[1].daily);
+  rows.sort((a,b)=>key(b)-key(a));
+  let h = `<p class="hint">今の最安出品を買い、売れている価格で出し直したときに、税${S.tax}%・出品手数料${S.fee}%を引いても利益が残るものです。</p>
+  <div class="bar"><select id="flipSort">
+    <option value="daily">並び：販売数込みの利益見込み</option><option value="unit">並び：1個あたり利益</option><option value="margin">並び：利益率</option>
+  </select></div>`;
+  if(!rows.length) h += `<div class="empty">条件に合う品はありません。<br>設定タブでしきい値を下げると増えます。</div>`;
+  for(const [it,f] of rows.slice(0,60)){
+    const tags = [];
+    if(it.m7 == null) tags.push(`<span class="tag warn">履歴なし・24h平均のみ</span>`);
+    if(it.lo7 != null && it.p < it.lo7) tags.push(`<span class="tag good">7日の最安値を更新</span>`);
+    if(it.m7 && it.p < it.m7*0.5) tags.push(`<span class="tag warn">相場の半額以下・誤出品かも</span>`);
+    if(it.l != null && it.l <= 2) tags.push(`<span class="tag warn">出品${it.l}件のみ</span>`);
+    if(it.s >= 20) tags.push(`<span class="tag good">よく売れる</span>`);
+    h += `<div class="card">
+      <div class="row"><div><div class="name">${esc(it.n)}</div><div class="cat">${esc(it.c||"")}</div></div>
+        <div class="right"><div class="big up">+${kina(f.profit)}</div><div class="small">1個あたり（${pct(f.margin)}）</div></div></div>
+      <div class="grid">
+        <span>買う（最安）</span><span>${full(it.p)}</span>
+        <span>売る目安</span><span>${full(f.ref)}</span>
+        <span>手取り/個</span><span>${full(f.ref*netRate())}</span>
+        <span>24h販売 / 出品</span><span>${full(it.s)}個 / ${full(it.l)}件</span>
+        <span>7日中央値</span><span>${full(it.m7)}</span>
+        <span>利益×24h販売数<br><span class="small">（20個まで）</span></span><span class="gold">${kina(f.daily)}</span>
+      </div>${spark(it.sp)}<div class="tags">${tags.join("")}</div></div>`;
+  }
+  return h;
+}
+
+// ── 画面：売り時 ─────────────────────────────────────
+function viewSell(){
+  const q = (LS.get("sellQ","")||"").trim().toLowerCase();
+  let list = ITEMS.filter(it => it.p);
+  if(q) list = list.filter(it => (it.n||"").toLowerCase().includes(q) || (it.c||"").toLowerCase().includes(q));
+  else list = list.filter(it => (it.s||0) >= S.minSold);
+  list.sort((a,b)=>((b.s||0)*(b.a||b.p)) - ((a.s||0)*(a.a||a.p)));
+  let h = `<p class="hint">手持ちの品をいくらで出せば売れるか、今が売り時かを見ます。検索なしのときは、よく売れている順に並びます。</p>
+  <div class="bar"><input id="sellQ" type="search" placeholder="手持ちのアイテム名で検索" value="${esc(LS.get("sellQ",""))}"></div>`;
+  if(!list.length) h += `<div class="empty">該当する品はありません。</div>`;
+  for(const it of list.slice(0,80)){
+    const ask = Math.max(1, it.p - 1), dev = it.m7 ? it.p/it.m7 - 1 : null;
+    let st = `<span class="tag">7日の履歴なし</span>`;
+    if(dev != null) st = dev >= 0.05 ? `<span class="tag good">売り時（7日中央値より${pct(dev)}）</span>` : dev <= -0.05 ? `<span class="tag bad">待ち（7日中央値より${pct(dev)}）</span>` : `<span class="tag">相場どおり</span>`;
+    h += `<div class="card">
+      <div class="row"><div><div class="name">${esc(it.n)}</div><div class="cat">${esc(it.c||"")}</div></div>
+        <div class="right"><div class="big">${kina(ask*netRate())}</div><div class="small">手取り/個</div></div></div>
+      <div class="grid">
+        <span>出品価格の目安</span><span>${full(ask)}</span>
+        <span>今の最安</span><span>${full(it.p)}</span>
+        <span>24h販売平均</span><span>${full(it.a)}</span>
+        <span>24h販売 / 出品</span><span>${full(it.s)}個 / ${full(it.l)}件</span>
+      </div>${spark(it.sp)}<div class="tags">${st}</div></div>`;
+  }
+  return h;
+}
+
+// ── 画面：製作 ───────────────────────────────────────
+function pickKey(v){
+  const m = String(v||"").match(/#([^#\s]+)\s*$/);
+  if(m && BYKEY[m[1]]) return m[1];
+  const hit = ITEMS.find(i => i.n === String(v||"").trim());
+  return hit ? hit.k : null;
+}
+function craftCalc(r){
+  const out = BYKEY[r.output?.key];
+  let cost = r.extra || 0, matSell = 0, missing = [];
+  for(const m of r.materials||[]){
+    const it = BYKEY[m.key];
+    if(!it || !it.p){ missing.push(it ? it.n : m.key); continue; }
+    cost += it.p*m.qty; matSell += it.p*m.qty*netRate();
+  }
+  if(!out || !out.p) missing.push(out ? out.n : "完成品");
+  const outQty = r.output?.qty || 1;
+  const revenue = out && out.p ? Math.max(1,out.p-1)*outQty*netRate() : null;
+  return { out, cost, matSell, revenue, profit: revenue==null?null:revenue-cost, vsSell: revenue==null?null:revenue-(matSell+(r.extra||0)), missing };
+}
+function viewCraft(){
+  let h = `<p class="hint">素材を最安値で買って作り、完成品を出品した場合の損益です。手持ちの素材を使うなら「素材をそのまま売る」との差も見てください。</p>`;
+  if(!RECIPES.length) h += `<div class="empty">レシピがまだありません。下の「レシピを追加」から登録します。</div>`;
+  RECIPES.forEach((r,idx)=>{
+    const c = craftCalc(r);
+    h += `<div class="card"><div class="row"><div><div class="name">${esc(r.name || c.out?.n || "レシピ")}</div>
+      <div class="cat">完成品 ${esc(c.out?.n||"?")} ×${r.output?.qty||1}</div></div>
+      <div class="right"><div class="big ${cls(c.profit)}">${c.profit==null?"—":(c.profit>0?"+":"")+kina(c.profit)}</div><div class="small">買って作る場合</div></div></div>
+      <div class="grid">
+        <span>素材費（最安）</span><span>${full(c.cost)}</span>
+        <span>完成品の手取り</span><span>${full(c.revenue)}</span>
+        <span>素材のまま売るより</span><span class="${cls(c.vsSell)}">${c.vsSell==null?"—":(c.vsSell>0?"+":"")+full(c.vsSell)}</span>
+        <span>完成品の24h販売</span><span>${full(c.out?.s)}個</span>
+      </div>
+      <details><summary class="small">素材の内訳</summary><table><tr><th>素材</th><th>数</th><th>単価</th><th>小計</th></tr>
+      ${(r.materials||[]).map(m=>{const it=BYKEY[m.key];return `<tr><td>${esc(it?it.n:m.key)}</td><td>${m.qty}</td><td>${full(it?.p)}</td><td>${full(it?.p?it.p*m.qty:null)}</td></tr>`}).join("")}
+      ${r.extra?`<tr><td>その他費用</td><td></td><td></td><td>${full(r.extra)}</td></tr>`:""}</table></details>
+      ${c.missing.length?`<div class="tags"><span class="tag warn">価格なし：${esc(c.missing.join("、"))}</span></div>`:""}
+      <div class="bar" style="margin:8px 0 0"><button data-edit="${idx}">編集</button><button data-del="${idx}">削除</button></div></div>`;
+  });
+  const ed = LS.get("editing", null);
+  const r = ed != null && RECIPES[ed] ? RECIPES[ed] : {name:"", output:{key:"",qty:1}, materials:[{key:"",qty:1}], extra:0};
+  const label = k => BYKEY[k] ? `${BYKEY[k].n} #${k}` : (k||"");
+  h += `<div class="card form"><details ${ed!=null?"open":""}><summary>${ed!=null?"レシピを編集":"レシピを追加"}</summary>
+    <label>レシピ名（任意）</label><input id="rName" value="${esc(r.name)}">
+    <label>完成品と個数</label><div class="mat"><input id="rOut" list="itemlist" placeholder="アイテム名で検索" value="${esc(label(r.output.key))}"><input id="rOutQty" type="number" min="1" value="${r.output.qty||1}"><span></span></div>
+    <label>素材と個数（候補から選ぶ）</label><div id="rMats">
+    ${(r.materials.length?r.materials:[{key:"",qty:1}]).map(m=>`<div class="mat"><input class="mName" list="itemlist" placeholder="素材名" value="${esc(label(m.key))}"><input class="mQty" type="number" min="1" value="${m.qty}"><button class="mDel" type="button">×</button></div>`).join("")}
+    </div><button id="rAddMat" type="button">＋ 素材を追加</button>
+    <label>マーケット外の費用（NPC素材・製作費など、キナ）</label><input id="rExtra" type="number" min="0" value="${r.extra||0}">
+    <div class="bar" style="margin-top:10px"><button class="primary" id="rSave">保存</button>${ed!=null?`<button id="rCancel">やめる</button>`:""}</div>
+    <p class="small">レシピはこのスマホに保存されます。設定タブから書き出して recipes.json に貼ると、素材の7日履歴も優先して集めます。</p>
+  </details></div>`;
+  return h;
+}
+
+// ── 画面：クーナ ─────────────────────────────────────
+function viewQuna(){
+  const yen = parseFloat(S.yenPerQuna);
+  const rows = CHESTS.map(([k,q])=>({k,q,rate:k/q}));
+  const best = rows.reduce((b,r)=>r.rate>(b?.rate||0)?r:b, null);
+  let h = `<p class="hint">交換所のキナ箱の値段（ゲーム内で確認して入力）から、1クーナで何キナ買えるかを比べます。数字はこのスマホに保存されます。</p>
+  <div class="card"><table><tr><th>キナ箱</th><th>クーナ</th><th>キナ/クーナ</th><th>100万キナ</th></tr>
+  ${rows.map((r,i)=>`<tr><td><input class="cK" data-i="${i}" type="number" value="${r.k}" style="width:100%"></td>
+    <td><input class="cQ" data-i="${i}" type="number" value="${r.q}" style="width:80px"></td>
+    <td class="${r===best?"gold":""}">${full(r.rate)}</td><td>${(1e6/r.rate).toFixed(0)}Q${isFinite(yen)&&yen>0?"<br><span class='small'>約"+full(1e6/r.rate*yen)+"円</span>":""}</td></tr>`).join("")}
+  </table><div class="bar" style="margin-top:8px"><button id="cAdd">＋ 行を追加</button><button id="cDel">最後の行を消す</button></div></div>
+  <div class="card form"><label>1クーナあたりの円（例：4,000クーナの価格 ÷ 4,000）</label>
+  <input id="yen" type="number" step="0.01" value="${esc(S.yenPerQuna)}" placeholder="未入力なら円換算しません"></div>`;
+  if(best && rows.length > 1){
+    const worst = rows.reduce((w,r)=>r.rate<w.rate?r:w, rows[0]);
+    const spread = best.rate/worst.rate - 1;
+    h += `<div class="card"><div class="name">いちばん得な箱：${kina(best.k)}キナ箱</div>
+    <p class="small">1クーナあたり ${full(best.rate)} キナ。いちばん割高な箱との差は ${pct(spread,1)} です。
+    安い箱を買って高い値付けの箱として出し直す差益は、受け取ったクーナが最大72時間保留されること、物質変換に週の上限があること、交換所の手数料を差し引いて考えてください。</p></div>`;
+  }
+  if(isFinite(yen) && yen>0 && best){
+    const top = ITEMS.map(it=>({it,f:flipOf(it)})).filter(x=>x.f && x.f.profit>0).sort((a,b)=>b.f.daily-a.f.daily)[0];
+    if(top) h += `<div class="card small">参考：転売1位「${esc(top.it.n)}」の利益見込み ${kina(top.f.daily)}キナは、クーナで買うと約${full(top.f.daily/best.rate*yen)}円分</div>`;
+  }
+  return h;
+}
+
+// ── 画面：設定 ───────────────────────────────────────
+function viewSettings(){
+  const num = (id, label, v, step="1") => `<label>${label}</label><input id="${id}" type="number" step="${step}" value="${v}">`;
+  return `<div class="card form">
+    <div class="two"><div>${num("sTax","販売税（%）",S.tax,"0.5")}</div><div>${num("sFee","出品手数料（%）",S.fee,"0.5")}</div></div>
+    <p class="small">税率はマーケット画面の右上に出ます。サーバー間マーケットが始まったらそちらの税率に変えてください。</p>
+    <div class="two"><div>${num("sMinSold","24h販売数の下限（個）",S.minSold)}</div><div>${num("sMinMargin","利益率の下限（%）",S.minMargin)}</div></div>
+    ${num("sMinProfit","1個あたり利益の下限（キナ）",S.minProfit,"1000")}
+    <label><input id="sCons" type="checkbox" ${S.conservative?"checked":""} style="width:auto"> 慎重モード（売値は24h販売平均と7日中央値の低いほうで計算）</label>
+    <div class="bar" style="margin-top:10px"><button class="primary" id="sSave">保存</button><button id="sReset">初期値に戻す</button></div>
+  </div>
+  <div class="card form"><div class="name">レシピの書き出し・読み込み</div>
+    <p class="small">書き出した内容を GitHub の recipes.json に貼ると、どの端末でも同じレシピが出ます。</p>
+    <textarea id="rJson" rows="5" style="width:100%;font:12px monospace;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px">${esc(JSON.stringify(RECIPES))}</textarea>
+    <div class="bar" style="margin-top:6px"><button id="rCopy">コピー</button><button id="rLoad">この内容を読み込む</button></div>
+  </div>
+  <div class="card"><div class="name">サーバー一覧（config.json の servers に名前かIDを入れる）</div>
+    <table><tr><th>名前</th><th>リージョン</th><th>ID</th></tr>
+    ${(INDEX?.all_servers||[]).map(s=>`<tr><td>${esc(s.name)}${s.faction?"・"+esc(s.faction):""}</td><td>${esc(s.region||"")}</td><td>${esc(s.server_id)}</td></tr>`).join("") || `<tr><td colspan="3">一覧がまだありません</td></tr>`}
+    </table><p class="small">データ生成：${INDEX?.generated_at ? ago(INDEX.generated_at) : "—"}。価格は出品中の最安値の観測値で、成約価格ではありません。販売数はサイト側の推定です。</p></div>`;
+}
+
+// ── 描画とイベント ───────────────────────────────────
+function render(){
+  document.querySelectorAll("#tabs button").forEach(b=>b.classList.toggle("on", b.dataset.tab===TAB));
+  const needData = ["flip","sell","craft"].includes(TAB);
+  const m = $("#main");
+  if(needData && !DATA){ m.innerHTML = `<div class="empty">データがありません。設定タブでサーバー一覧を確認し、config.json に自分のサーバーを入れてください。</div>`; return; }
+  m.innerHTML = {flip:viewFlip, sell:viewSell, craft:viewCraft, quna:viewQuna, settings:viewSettings}[TAB]();
+  bind();
+}
+function saveSettings(){ LS.set("settings", S); }
+function bind(){
+  const fs = $("#flipSort"); if(fs){ fs.value = S.flipSort; fs.onchange = () => { S.flipSort = fs.value; saveSettings(); render(); }; }
+  const sq = $("#sellQ"); if(sq){ let t; sq.oninput = () => { clearTimeout(t); t = setTimeout(()=>{ LS.set("sellQ", sq.value); const pos = sq.selectionStart; render(); const n=$("#sellQ"); n.focus(); n.setSelectionRange(pos,pos); }, 250); }; }
+  // 製作
+  document.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{ if(confirm("このレシピを削除しますか？")){ RECIPES.splice(+b.dataset.del,1); LS.set("recipes",RECIPES); LS.set("editing",null); render(); } });
+  document.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>{ LS.set("editing", +b.dataset.edit); render(); setTimeout(()=>$("#rName")?.scrollIntoView({behavior:"smooth",block:"center"}),50); });
+  const am = $("#rAddMat"); if(am) am.onclick = () => { const d = document.createElement("div"); d.className="mat"; d.innerHTML=`<input class="mName" list="itemlist" placeholder="素材名"><input class="mQty" type="number" min="1" value="1"><button class="mDel" type="button">×</button>`; $("#rMats").appendChild(d); bindMatDel(); };
+  bindMatDel();
+  const rc = $("#rCancel"); if(rc) rc.onclick = () => { LS.set("editing", null); render(); };
+  const rs = $("#rSave"); if(rs) rs.onclick = () => {
+    const outKey = pickKey($("#rOut").value);
+    if(!outKey){ alert("完成品を候補から選んでください"); return; }
+    const mats = [], bad = [];
+    document.querySelectorAll("#rMats .mat").forEach(row=>{
+      const v = row.querySelector(".mName").value.trim(); if(!v) return;
+      const k = pickKey(v); const q = Math.max(1, parseInt(row.querySelector(".mQty").value)||1);
+      if(k) mats.push({key:k, qty:q}); else bad.push(v);
+    });
+    if(bad.length){ alert("候補にない素材があります：" + bad.join("、")); return; }
+    if(!mats.length){ alert("素材を1つ以上入れてください"); return; }
+    const rec = { name: $("#rName").value.trim(), output:{key:outKey, qty:Math.max(1,parseInt($("#rOutQty").value)||1)}, materials:mats, extra: Math.max(0, parseFloat($("#rExtra").value)||0) };
+    const ed = LS.get("editing", null);
+    if(ed != null && RECIPES[ed]) RECIPES[ed] = rec; else RECIPES.push(rec);
+    LS.set("recipes", RECIPES); LS.set("editing", null); render();
+  };
+  // クーナ
+  document.querySelectorAll(".cK,.cQ").forEach(inp=>inp.onchange=()=>{ const i=+inp.dataset.i, v=parseFloat(inp.value); if(v>0){ CHESTS[i][inp.classList.contains("cK")?0:1]=v; LS.set("chests",CHESTS); render(); } });
+  const ca = $("#cAdd"); if(ca) ca.onclick = () => { CHESTS.push([1000000, 500]); LS.set("chests",CHESTS); render(); };
+  const cd = $("#cDel"); if(cd) cd.onclick = () => { if(CHESTS.length>1){ CHESTS.pop(); LS.set("chests",CHESTS); render(); } };
+  const y = $("#yen"); if(y) y.onchange = () => { S.yenPerQuna = y.value; saveSettings(); render(); };
+  // 設定
+  const ss = $("#sSave"); if(ss) ss.onclick = () => {
+    const g = id => parseFloat($(id).value);
+    S.tax = g("#sTax"); S.fee = g("#sFee"); S.minSold = g("#sMinSold"); S.minMargin = g("#sMinMargin"); S.minProfit = g("#sMinProfit");
+    for(const k of ["tax","fee","minSold","minMargin","minProfit"]) if(!isFinite(S[k])) S[k] = DEFAULTS[k];
+    S.conservative = $("#sCons").checked; saveSettings(); ss.textContent = "保存しました"; setTimeout(()=>render(), 700);
+  };
+  const sr = $("#sReset"); if(sr) sr.onclick = () => { const y = S.yenPerQuna; S = Object.assign({}, DEFAULTS, {yenPerQuna:y}); saveSettings(); render(); };
+  const cp = $("#rCopy"); if(cp) cp.onclick = async () => { try{ await navigator.clipboard.writeText($("#rJson").value); cp.textContent="コピーしました"; }catch(e){ $("#rJson").select(); } };
+  const rl = $("#rLoad"); if(rl) rl.onclick = () => { try{ const v = JSON.parse($("#rJson").value); if(!Array.isArray(v)) throw 0; RECIPES = v; LS.set("recipes",RECIPES); rl.textContent="読み込みました"; }catch(e){ alert("JSONの形式が正しくありません"); } };
+}
+function bindMatDel(){ document.querySelectorAll(".mDel").forEach(b=>b.onclick=()=>{ const rows=document.querySelectorAll("#rMats .mat"); if(rows.length>1) b.parentElement.remove(); else b.parentElement.querySelector(".mName").value=""; }); }
+boot();
+</script>
+</body>
+</html>

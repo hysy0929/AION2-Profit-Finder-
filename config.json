@@ -1,0 +1,11 @@
+{
+  "_説明": "servers に自分のサーバー名かIDを入れる（例: [\"ルミエル\"] や [2001]）。空のままだと一覧だけ出力するので、公開ページの「設定」タブでサーバー名とIDを確認できる。",
+  "servers": [],
+  "history_days": 7,
+  "history_budget_per_server": 80,
+  "candidates_flip": 40,
+  "candidates_volume": 30,
+  "tax_rate": 0.10,
+  "fee_rate": 0.02,
+  "request_delay_sec": 0.3
+}
