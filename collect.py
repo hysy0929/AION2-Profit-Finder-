@@ -114,7 +114,14 @@ def pick_servers(all_servers: list[dict], wanted: list) -> list[dict]:
 def fetch_items(api: Api, sid) -> list[dict]:
     rows, off = [], 0
     while True:
-        j = api.get("/api/items", {"server": sid, "limit": PAGE, "offset": off, "window": "24h"}) or {}
+        try:
+            j = api.get("/api/items", {"server": sid, "limit": PAGE, "offset": off, "window": "24h"}) or {}
+        except RuntimeError as e:
+            # 2ページ目以降で失敗したら（最終ページの先で503を返すことがある）、取れた分で続ける
+            if not rows:
+                raise
+            print(f"  {off}件目以降は取得できず（{e}）。取れた {len(rows)} 件で続行", file=sys.stderr)
+            return rows
         items = j.get("items") or []
         rows += items
         off += PAGE
