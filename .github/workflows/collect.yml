@@ -1,0 +1,49 @@
+name: 相場を収集して公開
+
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch: {}
+  push:
+    branches: [main]
+    paths: ["config.json", "recipes.json", "index.html", "collect.py", "site/**", "collector/**"]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: ページを用意
+        run: |
+          mkdir -p _site
+          if [ -d site ]; then cp -r site/* _site/; else cp index.html _site/; fi
+          cp recipes.json _site/recipes.json
+      - name: aion2.exchange から収集
+        run: |
+          if [ -f collector/collect.py ]; then python collector/collect.py --out _site/data; else python collect.py --out _site/data; fi
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
