@@ -81,7 +81,7 @@ const LS = {
 };
 const DEFAULTS = { tax:10, fee:2, minSold:3, minProfit:5000, minMargin:5, conservative:true, flipSort:"daily", yenPerQuna:"" };
 let S = Object.assign({}, DEFAULTS, LS.get("settings", {}));
-let INDEX = null, DATA = null, ITEMS = [], BYKEY = {}, TAB = LS.get("tab", "flip");
+let INDEX = null, DATA = null, ITEMS = [], BYKEY = {}, NAMES = {}, TAB = LS.get("tab", "flip");
 let RECIPES = LS.get("recipes", null);
 let CHESTS = LS.get("chests", [[400000,185],[2000000,930],[10000000,4998]]);
 const $ = s => document.querySelector(s);
@@ -106,6 +106,9 @@ function ago(ts){
   return Math.round(m/1440) + "日前";
 }
 const netRate = () => 1 - S.tax/100 - S.fee/100;
+// ひらがなで検索してもカタカナ名に当たるようにする
+const toKata = s => String(s||"").replace(/[\u3041-\u3096]/g, c => String.fromCharCode(c.charCodeAt(0)+0x60));
+const sub = it => it.j ? `${esc(it.en)}${it.c?" ・ "+esc(it.c):""}` : esc(it.c||"");
 
 function spark(sp){
   if(!sp || sp.filter(v=>v!=null).length < 2) return "";
@@ -129,6 +132,7 @@ async function getJSON(path){
 async function boot(){
   try{ INDEX = await getJSON("data/index.json"); }
   catch(e){ $("#meta").textContent = "データがまだありません（収集を一度実行してください）"; INDEX = {servers:[], all_servers:[]}; }
+  try{ NAMES = await getJSON("data/names.json"); }catch(e){ NAMES = {}; }
   if(INDEX.defaults && !LS.get("settings", null)){
     S.tax = Math.round(INDEX.defaults.tax_rate*1000)/10; S.fee = Math.round(INDEX.defaults.fee_rate*1000)/10;
   }
@@ -149,8 +153,10 @@ async function loadServer(){
   if(!sid){ DATA = null; ITEMS = []; BYKEY = {}; $("#meta").textContent = "config.json にサーバーを設定してください（設定タブに一覧あり）"; render(); return; }
   try{ DATA = await getJSON(`data/s/${sid}.json`); }
   catch(e){ DATA = null; ITEMS = []; BYKEY = {}; $("#meta").textContent = "このサーバーのデータを読めませんでした"; render(); return; }
-  ITEMS = DATA.items || []; BYKEY = Object.fromEntries(ITEMS.map(i=>[i.k,i]));
-  $("#itemlist").innerHTML = ITEMS.map(i=>`<option value="${esc(i.n)} #${esc(i.k)}"></option>`).join("");
+  ITEMS = DATA.items || [];
+  for(const it of ITEMS){ it.en = it.n; it.j = NAMES[it.k] || null; it.n = it.j || it.en; }
+  BYKEY = Object.fromEntries(ITEMS.map(i=>[i.k,i]));
+  $("#itemlist").innerHTML = ITEMS.map(i=>`<option value="${esc(i.n)} #${esc(i.k)}">${i.j?esc(i.en):""}</option>`).join("");
   $("#meta").textContent = `相場 ${ago(DATA.captured_at)}の値 ・ ${ITEMS.length}品目 ・ 出典 aion2.exchange（非公式）`;
   render();
 }
@@ -194,7 +200,7 @@ function viewFlip(){
     if(it.l != null && it.l <= 2) tags.push(`<span class="tag warn">出品${it.l}件のみ</span>`);
     if(it.s >= 20) tags.push(`<span class="tag good">よく売れる</span>`);
     h += `<div class="card">
-      <div class="row"><div><div class="name">${esc(it.n)}</div><div class="cat">${esc(it.c||"")}</div></div>
+      <div class="row"><div><div class="name">${esc(it.n)}</div><div class="cat">${sub(it)}</div></div>
         <div class="right"><div class="big up">+${kina(f.profit)}</div><div class="small">1個あたり（${pct(f.margin)}）</div></div></div>
       <div class="grid">
         <span>買う（最安）</span><span>${full(it.p)}</span>
@@ -212,18 +218,19 @@ function viewFlip(){
 function viewSell(){
   const q = (LS.get("sellQ","")||"").trim().toLowerCase();
   let list = ITEMS.filter(it => it.p);
-  if(q) list = list.filter(it => (it.n||"").toLowerCase().includes(q) || (it.c||"").toLowerCase().includes(q));
+  const kq = toKata(q);
+  if(q) list = list.filter(it => toKata((it.j||"").toLowerCase()).includes(kq) || (it.en||"").toLowerCase().includes(q) || (it.c||"").toLowerCase().includes(q));
   else list = list.filter(it => (it.s||0) >= S.minSold);
   list.sort((a,b)=>((b.s||0)*(b.a||b.p)) - ((a.s||0)*(a.a||a.p)));
   let h = `<p class="hint">手持ちの品をいくらで出せば売れるか、今が売り時かを見ます。検索なしのときは、よく売れている順に並びます。</p>
-  <div class="bar"><input id="sellQ" type="search" placeholder="手持ちのアイテム名で検索" value="${esc(LS.get("sellQ",""))}"></div>`;
+  <div class="bar"><input id="sellQ" type="search" placeholder="アイテム名で検索（日本語・英語）" value="${esc(LS.get("sellQ",""))}"></div>`;
   if(!list.length) h += `<div class="empty">該当する品はありません。</div>`;
   for(const it of list.slice(0,80)){
     const ask = Math.max(1, it.p - 1), dev = it.m7 ? it.p/it.m7 - 1 : null;
     let st = `<span class="tag">7日の履歴なし</span>`;
     if(dev != null) st = dev >= 0.05 ? `<span class="tag good">売り時（7日中央値より${pct(dev)}）</span>` : dev <= -0.05 ? `<span class="tag bad">待ち（7日中央値より${pct(dev)}）</span>` : `<span class="tag">相場どおり</span>`;
     h += `<div class="card">
-      <div class="row"><div><div class="name">${esc(it.n)}</div><div class="cat">${esc(it.c||"")}</div></div>
+      <div class="row"><div><div class="name">${esc(it.n)}</div><div class="cat">${sub(it)}</div></div>
         <div class="right"><div class="big">${kina(ask*netRate())}</div><div class="small">手取り/個</div></div></div>
       <div class="grid">
         <span>出品価格の目安</span><span>${full(ask)}</span>

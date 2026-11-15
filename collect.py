@@ -18,6 +18,7 @@ aion2.exchange（有志の非公式相場サイト）の公開APIから、指定
 from __future__ import annotations
 
 import argparse
+import os
 import json
 import statistics
 import sys
@@ -231,6 +232,92 @@ def recipe_keys() -> set[str]:
     return keys
 
 
+# ── 日本語のアイテム名 ───────────────────────────────────────────────────
+# aion2.exchange の名前は英語なので、NC公式サイトのアイテム情報APIから日本語名を取って
+# names.json（アイテムID → 日本語名）に貯める。前回公開分を読み戻し、毎回少しずつ増やす。
+# NCはURLの形をときどき変えるので、いくつかの候補を試して日本語が返ったものを使う。
+
+NC_NAME_URLS = [
+    ("https://aion2.plaync.com/ja-jp/api/gameconst/item", {"lang": "ja-JP", "region": "jp"}),
+    ("https://aion2.plaync.com/ja-jp/api/gameconst/item", {"lang": "ja-JP", "region": "as"}),
+    ("https://aion2.plaync.com/ja-jp/api/gameconst/item", {"lang": "ja-JP"}),
+    ("https://aion2.plaync.com/api/gameconst/item", {"lang": "ja-JP", "region": "jp"}),
+    ("https://aion2.plaync.com/api/gameconst/item", {"lang": "ja-JP"}),
+]
+
+
+def default_prev_names_url() -> str | None:
+    """GitHub Actions 上なら、公開ページのURLを自動で組み立てる（https://owner.github.io/repo/data/names.json）。"""
+    repo = os.environ.get("GITHUB_REPOSITORY")
+    if not repo or "/" not in repo:
+        return None
+    owner, name = repo.split("/", 1)
+    if name.lower() == f"{owner.lower()}.github.io":
+        return f"https://{owner.lower()}.github.io/data/names.json"
+    return f"https://{owner.lower()}.github.io/{name}/data/names.json"
+
+
+def is_japanese(s) -> bool:
+    return isinstance(s, str) and any("぀" <= ch <= "ヿ" or "一" <= ch <= "鿿" for ch in s)
+
+
+def load_prev_names(url: str | None) -> dict:
+    if not url:
+        return {}
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": UA})
+        with urllib.request.urlopen(req, timeout=20) as r:
+            d = json.load(r)
+        return {str(k): v for k, v in d.items() if is_japanese(v)} if isinstance(d, dict) else {}
+    except Exception as e:  # 初回は404になる
+        print(f"前回の日本語名は読めませんでした（{e}）")
+        return {}
+
+
+def nc_name(url: str, params: dict, key: str):
+    try:
+        j = _get_abs(url, {**params, "id": key, "enchantLevel": 0})
+    except Exception:
+        return None
+    if isinstance(j, dict):
+        if isinstance(j.get("data"), dict):
+            j = j["data"]
+        n = j.get("name")
+        if is_japanese(n):
+            return n
+    return None
+
+
+def _get_abs(url: str, params: dict):
+    full = url + "?" + urllib.parse.urlencode(params)
+    req = urllib.request.Request(full, headers={"User-Agent": UA, "Accept": "application/json", "Accept-Language": "ja-JP"})
+    with urllib.request.urlopen(req, timeout=15) as r:
+        return json.load(r)
+
+
+def fill_names(keys: list[str], names: dict, limit: int) -> str:
+    todo = [k for k in keys if k not in names]
+    if not todo:
+        return f"日本語名：{len(names)}件（追加なし）"
+    probe = todo[:3]
+    chosen = None
+    for url, params in NC_NAME_URLS:
+        if any(nc_name(url, params, k) for k in probe):
+            chosen = (url, params)
+            break
+        time.sleep(0.3)
+    if not chosen:
+        return f"日本語名：NC公式から取得できませんでした（試したURL {len(NC_NAME_URLS)}種）。手元の {len(names)} 件を使用"
+    added = 0
+    for k in todo[:limit]:
+        n = nc_name(chosen[0], chosen[1], k)
+        if n:
+            names[k] = n
+            added += 1
+        time.sleep(0.2)
+    return f"日本語名：{added}件追加（計{len(names)}件、残り{max(0, len(todo) - limit)}件は次回以降）取得元 {chosen[0]} {chosen[1]}"
+
+
 # ── メイン ───────────────────────────────────────────────────────────────
 
 
@@ -271,6 +358,8 @@ def main() -> int:
     ap.add_argument("--base", default="https://aion2.exchange")
     ap.add_argument("--servers", help="config.json の servers を上書き（カンマ区切りの名前かID）")
     ap.add_argument("--list-servers", action="store_true")
+    ap.add_argument("--prev-names", default=os.environ.get("PREV_NAMES_URL") or default_prev_names_url(), help="前回公開した names.json のURL")
+    ap.add_argument("--names-per-run", type=int, default=400)
     a = ap.parse_args()
 
     cfg = {"servers": [], "history_days": 7, "history_budget_per_server": 80, "candidates_flip": 40,
@@ -309,6 +398,21 @@ def main() -> int:
     }
     (out / "index.json").write_text(json.dumps(index, ensure_ascii=False, indent=1), encoding="utf-8")
     print(f"APIリクエスト {api.calls} 回")
+
+    # 日本語名（失敗しても相場データの公開は止めない）
+    names = load_prev_names(a.prev_names)
+    keys: list[str] = []
+    for s in done:
+        try:
+            doc = json.loads((out / "s" / f"{s['server_id']}.json").read_text(encoding="utf-8"))
+            keys += [it["k"] for it in doc["items"] if it["k"] not in keys]
+        except (OSError, KeyError, json.JSONDecodeError):
+            pass
+    try:
+        print(fill_names(keys, names, a.names_per_run))
+    except Exception as e:
+        print(f"日本語名の取得でエラー：{e}", file=sys.stderr)
+    (out / "names.json").write_text(json.dumps(names, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     return 0 if (done or not targets) else 1
 
 
