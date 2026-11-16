@@ -145,7 +145,46 @@ def norm_item(r: dict) -> dict | None:
         "s": num(r.get("units_sold")),       # 24時間の販売数（推定）
         "a": num(r.get("sold_avg_price")),   # 24時間の販売平均単価
         "t": r.get("captured_at"),
+        "ic": icon_of(r),
+        "g": r.get("grade") or r.get("rarity") or r.get("quality"),
     }
+
+
+def icon_of(r: dict):
+    for k in ("icon_url", "icon", "image_url", "image", "img", "iconUrl"):
+        v = r.get(k)
+        if isinstance(v, str) and v:
+            return v
+    return None
+
+
+def dump_debug(api: Api, sid, out: Path) -> None:
+    """APIの実際の返り値の一部を debug.json に残す（項目名の確認用。公開されるのは相場データのみ）。"""
+    dbg: dict = {}
+    for label, params in (("items_window24h", {"server": sid, "limit": 3, "offset": 0, "window": "24h"}),
+                          ("items_plain", {"server": sid, "limit": 3}),
+                          ("items_sort_sold", {"server": sid, "limit": 3, "sort": "units_sold"})):
+        try:
+            dbg[label] = api.get("/api/items", params, retries=1)
+        except Exception as e:
+            dbg[label] = f"error: {e}"
+    try:
+        first = (dbg.get("items_plain") or {}).get("items", [{}])[0]
+        key = first.get("item_key", first.get("id"))
+        if key is not None:
+            for label, path, params in (("item_detail", f"/api/items/{key}", {"server": sid}),
+                                        ("prices", f"/api/items/{key}/prices", {"server": sid}),
+                                        ("sales", f"/api/items/{key}/sales", {"server": sid})):
+                try:
+                    j = api.get(path, params, retries=1)
+                    if isinstance(j, dict) and isinstance(j.get("points"), list):
+                        j = {**j, "points": j["points"][:3], "_points_total": len(j["points"])}
+                    dbg[label] = j
+                except Exception as e:
+                    dbg[label] = f"error: {e}"
+    except Exception as e:
+        dbg["detail_error"] = str(e)
+    (out / "debug.json").write_text(json.dumps(dbg, ensure_ascii=False, indent=1, default=str)[:60000], encoding="utf-8")
 
 
 def fetch_history(api: Api, sid, key: str, days: int) -> list[tuple[datetime, float]]:
@@ -382,6 +421,11 @@ def main() -> int:
         print(f"config.json の servers {cfg['servers']} に一致するサーバーがありません。--list-servers で確認してください。", file=sys.stderr)
 
     rkeys = recipe_keys()
+    if targets:
+        try:
+            dump_debug(api, targets[0]["server_id"], out)
+        except Exception as e:
+            print(f"debug: {e}", file=sys.stderr)
     done = []
     for s in targets:
         try:

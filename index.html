@@ -52,6 +52,15 @@ th{color:var(--sub);font-weight:500}
 details summary{cursor:pointer;color:var(--blue)}
 .small{font-size:12px;color:var(--sub)}
 .right{text-align:right}
+.chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:0 -12px 8px;padding:0 12px}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;border-radius:99px;padding:6px 12px;font-size:13.5px;background:var(--panel2);color:var(--sub);border:1px solid var(--line)}
+.chip.on{background:var(--gold);color:#1a1405;border-color:var(--gold);font-weight:600}
+.chips.sub .chip{padding:4px 10px;font-size:12.5px}
+.chips.sub .chip.on{background:transparent;color:var(--gold)}
+.hd{display:flex;gap:10px;align-items:center;min-width:0}
+.ic{flex:none;width:44px;height:44px;border-radius:8px;background:var(--panel2);border:1px solid var(--line);display:grid;place-items:center;font-size:22px;object-fit:contain}
+.g-legend{border-color:#e8a33a}.g-epic{border-color:#b06cff}.g-rare,.g-unique{border-color:#4f9dff}.g-fabled,.g-mythic{border-color:#ff6a3d}
 </style>
 </head>
 <body>
@@ -83,6 +92,7 @@ const DEFAULTS = { tax:10, fee:2, minSold:3, minProfit:5000, minMargin:5, conser
 let S = Object.assign({}, DEFAULTS, LS.get("settings", {}));
 let INDEX = null, DATA = null, ITEMS = [], BYKEY = {}, NAMES = {}, TAB = LS.get("tab", "flip");
 let RECIPES = LS.get("recipes", null);
+let CAT = LS.get("cat", {sec:"", c:""});
 let CHESTS = LS.get("chests", [[400000,185],[2000000,930],[10000000,4998]]);
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -108,7 +118,34 @@ function ago(ts){
 const netRate = () => 1 - S.tax/100 - S.fee/100;
 // ひらがなで検索してもカタカナ名に当たるようにする
 const toKata = s => String(s||"").replace(/[\u3041-\u3096]/g, c => String.fromCharCode(c.charCodeAt(0)+0x60));
-const sub = it => it.j ? `${esc(it.en)}${it.c?" ・ "+esc(it.c):""}` : esc(it.c||"");
+// カテゴリーの日本語表示（APIは英語。正式訳と違う場合あり）
+const SEC_JA = {"Weapons":"武器","Armor":"防具","Accessories":"アクセサリー","Materials":"素材","Consumables & collectibles":"消耗品","Skins":"スキン","Other":"その他"};
+const SEC_ICON = {"Weapons":"⚔️","Armor":"🛡️","Accessories":"💍","Materials":"🪨","Consumables & collectibles":"🧪","Skins":"👘","Other":"📦"};
+const CAT_JA = {"Boots":"靴","Breastplates":"胴","Cloaks":"マント","Helms":"兜","Pauldrons":"肩","Greaves":"脚","Gloves":"手袋","Earrings":"イヤリング","Necklaces":"ネックレス","Rings":"指輪","Belts":"ベルト","Bracelets":"ブレスレット","Bows":"弓","Daggers":"短剣","Greatswords":"大剣","Guards":"盾","Shields":"盾","Longswords":"長剣","Swords":"剣","Maces":"メイス","Orbs":"宝珠","Spellbooks":"魔導書","Staves":"杖","Polearms":"槍","Amplify stones":"増幅石","Armor skins":"防具スキン","Accessory skins":"アクセサリースキン","Weapon skins":"武器スキン","Accessories":"アクセサリー","Artwork":"アートワーク","Crafting materials":"製作素材","Gathered resources":"採集物","Food":"料理","Manastones & soulstones":"魔石・霊石","Potions & serums":"ポーション・秘薬","Sealed wings":"封印された翼","Transformation candy":"変身キャンディ","Wings":"翼","Other items":"その他","Other":"その他"};
+const secJa = v => SEC_JA[v] || v || "その他";
+const catJa = v => CAT_JA[v] || v || "";
+function inCat(it){ return (!CAT.sec || it.sec === CAT.sec) && (!CAT.c || it.c === CAT.c); }
+function catBar(){
+  const secs = [], cnt = {};
+  for(const it of ITEMS){ const k = it.sec || "Other"; if(!(k in cnt)){ cnt[k]=0; secs.push(k); } cnt[k]++; }
+  const order = Object.keys(SEC_JA);
+  secs.sort((a,b)=>(order.indexOf(a)+99*(order.indexOf(a)<0))-(order.indexOf(b)+99*(order.indexOf(b)<0)));
+  let h = `<div class="chips"><button class="chip ${CAT.sec?"":"on"}" data-sec="">すべて</button>` +
+    secs.map(k=>`<button class="chip ${CAT.sec===k?"on":""}" data-sec="${esc(k)}">${SEC_ICON[k]||""} ${esc(secJa(k))}</button>`).join("") + `</div>`;
+  if(CAT.sec){
+    const cs = [];
+    for(const it of ITEMS) if(it.sec===CAT.sec && it.c && !cs.includes(it.c)) cs.push(it.c);
+    if(cs.length > 1) h += `<div class="chips sub"><button class="chip ${CAT.c?"":"on"}" data-c="">すべて</button>` +
+      cs.map(c=>`<button class="chip ${CAT.c===c?"on":""}" data-c="${esc(c)}">${esc(catJa(c))}</button>`).join("") + `</div>`;
+  }
+  return h;
+}
+function iconOf(it){
+  const g = it.g ? " g-" + String(it.g).toLowerCase() : "";
+  if(it.ic) return `<img class="ic${g}" src="${esc(it.ic)}" alt="" loading="lazy" onerror="this.outerHTML='<span class=&quot;ic${g}&quot;>${SEC_ICON[it.sec]||"📦"}</span>'">`;
+  return `<span class="ic${g}">${SEC_ICON[it.sec]||"📦"}</span>`;
+}
+const sub = it => (it.j ? esc(it.en) + " ・ " : "") + esc(catJa(it.c));
 
 function spark(sp){
   if(!sp || sp.filter(v=>v!=null).length < 2) return "";
@@ -180,6 +217,7 @@ function flipOf(it){
 function viewFlip(){
   const rows = [];
   for(const it of ITEMS){
+    if(!inCat(it)) continue;
     const f = flipOf(it);
     if(!f) continue;
     if(it.s < S.minSold || f.profit < S.minProfit || f.margin < S.minMargin/100) continue;
@@ -188,7 +226,7 @@ function viewFlip(){
   const key = {daily:r=>r[1].daily, unit:r=>r[1].profit, margin:r=>r[1].margin}[S.flipSort] || (r=>r[1].daily);
   rows.sort((a,b)=>key(b)-key(a));
   let h = `<p class="hint">今の最安出品を買い、売れている価格で出し直したときに、税${S.tax}%・出品手数料${S.fee}%を引いても利益が残るものです。</p>
-  <div class="bar"><select id="flipSort">
+  ${catBar()}<div class="bar"><select id="flipSort">
     <option value="daily">並び：販売数込みの利益見込み</option><option value="unit">並び：1個あたり利益</option><option value="margin">並び：利益率</option>
   </select></div>`;
   if(!rows.length) h += `<div class="empty">条件に合う品はありません。<br>設定タブでしきい値を下げると増えます。</div>`;
@@ -200,7 +238,7 @@ function viewFlip(){
     if(it.l != null && it.l <= 2) tags.push(`<span class="tag warn">出品${it.l}件のみ</span>`);
     if(it.s >= 20) tags.push(`<span class="tag good">よく売れる</span>`);
     h += `<div class="card">
-      <div class="row"><div><div class="name">${esc(it.n)}</div><div class="cat">${sub(it)}</div></div>
+      <div class="row"><div class="hd">${iconOf(it)}<div><div class="name">${esc(it.n)}</div><div class="cat">${sub(it)}</div></div></div>
         <div class="right"><div class="big up">+${kina(f.profit)}</div><div class="small">1個あたり（${pct(f.margin)}）</div></div></div>
       <div class="grid">
         <span>買う（最安）</span><span>${full(it.p)}</span>
@@ -217,20 +255,21 @@ function viewFlip(){
 // ── 画面：売り時 ─────────────────────────────────────
 function viewSell(){
   const q = (LS.get("sellQ","")||"").trim().toLowerCase();
-  let list = ITEMS.filter(it => it.p);
+  let list = ITEMS.filter(it => it.p && inCat(it));
   const kq = toKata(q);
-  if(q) list = list.filter(it => toKata((it.j||"").toLowerCase()).includes(kq) || (it.en||"").toLowerCase().includes(q) || (it.c||"").toLowerCase().includes(q));
-  else list = list.filter(it => (it.s||0) >= S.minSold);
-  list.sort((a,b)=>((b.s||0)*(b.a||b.p)) - ((a.s||0)*(a.a||a.p)));
-  let h = `<p class="hint">手持ちの品をいくらで出せば売れるか、今が売り時かを見ます。検索なしのときは、よく売れている順に並びます。</p>
-  <div class="bar"><input id="sellQ" type="search" placeholder="アイテム名で検索（日本語・英語）" value="${esc(LS.get("sellQ",""))}"></div>`;
+  if(q) list = list.filter(it => toKata((it.j||"").toLowerCase()).includes(kq) || (it.en||"").toLowerCase().includes(q) || catJa(it.c).includes(q));
+  else if(!CAT.sec) list = list.filter(it => (it.s||0) >= S.minSold || !ITEMS.some(x=>x.s));
+  list.sort((a,b)=>((b.s||0)*(b.a||b.p)) - ((a.s||0)*(a.a||a.p)) || (b.l||0)-(a.l||0) || b.p-a.p);
+  let h = `<p class="hint">手持ちの品をいくらで出せば売れるか、今が売り時かを見ます。カテゴリーを選ぶか、名前で絞り込めます。</p>
+  ${catBar()}<div class="bar"><input id="sellQ" type="search" placeholder="アイテム名で検索（日本語・英語）" value="${esc(LS.get("sellQ",""))}"></div>`;
   if(!list.length) h += `<div class="empty">該当する品はありません。</div>`;
-  for(const it of list.slice(0,80)){
+  if(list.length > 150) h += `<p class="small">${list.length}件中150件を表示中。カテゴリーで絞り込んでください。</p>`;
+  for(const it of list.slice(0,150)){
     const ask = Math.max(1, it.p - 1), dev = it.m7 ? it.p/it.m7 - 1 : null;
     let st = `<span class="tag">7日の履歴なし</span>`;
     if(dev != null) st = dev >= 0.05 ? `<span class="tag good">売り時（7日中央値より${pct(dev)}）</span>` : dev <= -0.05 ? `<span class="tag bad">待ち（7日中央値より${pct(dev)}）</span>` : `<span class="tag">相場どおり</span>`;
     h += `<div class="card">
-      <div class="row"><div><div class="name">${esc(it.n)}</div><div class="cat">${sub(it)}</div></div>
+      <div class="row"><div class="hd">${iconOf(it)}<div><div class="name">${esc(it.n)}</div><div class="cat">${sub(it)}</div></div></div>
         <div class="right"><div class="big">${kina(ask*netRate())}</div><div class="small">手取り/個</div></div></div>
       <div class="grid">
         <span>出品価格の目安</span><span>${full(ask)}</span>
@@ -358,6 +397,8 @@ function render(){
 }
 function saveSettings(){ LS.set("settings", S); }
 function bind(){
+  document.querySelectorAll("[data-sec]").forEach(b=>b.onclick=()=>{ CAT = {sec:b.dataset.sec, c:""}; LS.set("cat",CAT); render(); });
+  document.querySelectorAll("[data-c]").forEach(b=>b.onclick=()=>{ CAT.c = b.dataset.c; LS.set("cat",CAT); render(); });
   const fs = $("#flipSort"); if(fs){ fs.value = S.flipSort; fs.onchange = () => { S.flipSort = fs.value; saveSettings(); render(); }; }
   const sq = $("#sellQ"); if(sq){ let t; sq.oninput = () => { clearTimeout(t); t = setTimeout(()=>{ LS.set("sellQ", sq.value); const pos = sq.selectionStart; render(); const n=$("#sellQ"); n.focus(); n.setSelectionRange(pos,pos); }, 250); }; }
   // 製作
