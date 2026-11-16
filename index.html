@@ -12,38 +12,43 @@
 }
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif}
+body.lock{overflow:hidden}
 header{position:sticky;top:0;z-index:5;background:rgba(17,21,28,.96);backdrop-filter:blur(6px);border-bottom:1px solid var(--line);padding:10px 12px 0;padding-top:max(10px,env(safe-area-inset-top))}
 .top{display:flex;gap:8px;align-items:center}
-h1{font-size:16px;margin:0;color:var(--gold);letter-spacing:.02em;white-space:nowrap}
-select,input,button{font:inherit;color:var(--text);background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:7px 9px}
-input{width:100%}
+h1{font-size:16px;margin:0;color:var(--gold);white-space:nowrap}
+select,input,button,textarea{font:inherit;color:var(--text);background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:7px 9px}
+input,textarea{width:100%}
 button{cursor:pointer}
 button.primary{background:var(--gold);color:#1a1405;border-color:var(--gold);font-weight:600}
 .top select{margin-left:auto;max-width:55%}
 .meta{font-size:12px;color:var(--sub);margin:4px 0 6px}
-nav{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}
-nav button{flex:1;border:0;border-radius:8px 8px 0 0;background:transparent;color:var(--sub);padding:8px 6px;white-space:nowrap}
+nav{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;margin:0 -12px;padding:0 12px}
+nav::-webkit-scrollbar{display:none}
+nav button{flex:none;border:0;border-radius:8px 8px 0 0;background:transparent;color:var(--sub);padding:8px 11px;white-space:nowrap}
 nav button.on{background:var(--panel);color:var(--gold);font-weight:600}
 main{padding:10px 12px 40px;max-width:760px;margin:0 auto}
 .bar{display:flex;gap:8px;margin-bottom:10px;align-items:center}
 .bar>*{flex:1}
 .hint{font-size:12.5px;color:var(--sub);margin:0 0 10px}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px}
-.row{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
-.name{font-weight:600}
+.card.fav{border-color:#6b5a2c}
+.tap{cursor:pointer}
+.row{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.name{font-weight:600;line-height:1.35}
 .cat{font-size:12px;color:var(--sub)}
-.big{font-size:18px;font-weight:700}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:2px 12px;font-size:13.5px;margin-top:6px}
-.grid span:nth-child(odd){color:var(--sub)}
-.grid span:nth-child(even){text-align:right;font-variant-numeric:tabular-nums}
+.big{font-size:18px;font-weight:700;white-space:nowrap}
+.grid{display:grid;grid-template-columns:1fr auto;gap:2px 12px;font-size:13.5px;margin-top:6px}
+.grid>span:nth-child(odd){color:var(--sub)}
+.grid>span:nth-child(even){text-align:right;font-variant-numeric:tabular-nums}
 .up{color:var(--up)} .down{color:var(--down)} .gold{color:var(--gold)}
 .tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
 .tag{font-size:11.5px;padding:1px 7px;border-radius:99px;background:var(--panel2);color:var(--sub);border:1px solid var(--line)}
-.tag.good{color:var(--up);border-color:#2f6a48} .tag.bad{color:var(--down);border-color:#7a3a3a} .tag.warn{color:var(--warn);border-color:#7a5a2f}
+.tag.good{color:var(--up);border-color:#2f6a48} .tag.bad{color:var(--down);border-color:#7a3a3a} .tag.warn{color:var(--warn);border-color:#7a5a2f} .tag.gold{color:var(--gold);border-color:#6b5a2c}
+.tr{font-size:10.5px;color:var(--sub);border:1px solid var(--line);border-radius:4px;padding:0 4px;margin-left:4px;vertical-align:2px;font-weight:400}
 svg.spark{width:100%;height:34px;margin-top:6px;display:block}
 .empty{color:var(--sub);text-align:center;padding:30px 10px}
 table{width:100%;border-collapse:collapse;font-size:13.5px}
-td,th{padding:6px 4px;border-bottom:1px solid var(--line);text-align:right}
+td,th{padding:6px 4px;border-bottom:1px solid var(--line);text-align:right;vertical-align:top}
 td:first-child,th:first-child{text-align:left}
 th{color:var(--sub);font-weight:500}
 .form label{display:block;font-size:12.5px;color:var(--sub);margin:8px 0 3px}
@@ -59,8 +64,24 @@ details summary{cursor:pointer;color:var(--blue)}
 .chips.sub .chip{padding:4px 10px;font-size:12.5px}
 .chips.sub .chip.on{background:transparent;color:var(--gold)}
 .hd{display:flex;gap:10px;align-items:center;min-width:0}
-.ic{flex:none;width:44px;height:44px;border-radius:8px;background:var(--panel2);border:1px solid var(--line);display:grid;place-items:center;font-size:22px;object-fit:contain}
-.g-legend{border-color:#e8a33a}.g-epic{border-color:#b06cff}.g-rare,.g-unique{border-color:#4f9dff}.g-fabled,.g-mythic{border-color:#ff6a3d}
+.ic{flex:none;width:44px;height:44px;border-radius:8px;background:var(--panel2);border:1px solid var(--line);display:grid;place-items:center;font-size:22px}
+.star{flex:none;border:0;background:transparent;font-size:22px;line-height:1;padding:2px 4px;color:var(--sub)}
+.star.on{color:var(--gold)}
+.seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:10px}
+.seg button{flex:1;border:0;border-radius:0;background:var(--panel2);color:var(--sub);padding:7px 4px;font-size:13.5px}
+.seg button.on{background:var(--gold);color:#1a1405;font-weight:600}
+/* 詳細シート */
+#sheet{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.55);display:none}
+#sheet.open{display:block}
+#sheet .body{position:absolute;left:0;right:0;bottom:0;top:6vh;background:var(--bg);border-radius:16px 16px 0 0;border-top:1px solid var(--line);overflow-y:auto;padding:14px 14px 40px;max-width:760px;margin:0 auto}
+#sheet .close{position:sticky;top:0;float:right;font-size:18px;padding:4px 10px;z-index:2}
+svg.chart{width:100%;height:190px;display:block}
+.legend{display:flex;gap:12px;font-size:12px;color:var(--sub);margin-top:4px}
+.legend i{display:inline-block;width:10px;height:3px;border-radius:2px;vertical-align:middle;margin-right:4px}
+.kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:8px 0}
+.kpi div{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:6px 8px}
+.kpi b{display:block;font-size:16px}
+.kpi span{font-size:11.5px;color:var(--sub)}
 </style>
 </head>
 <body>
@@ -71,31 +92,42 @@ details summary{cursor:pointer;color:var(--blue)}
   </div>
   <div class="meta" id="meta">読み込み中…</div>
   <nav id="tabs">
-    <button data-tab="flip" class="on">転売</button>
+    <button data-tab="flip">転売</button>
+    <button data-tab="move">値動き</button>
     <button data-tab="sell">売り時</button>
+    <button data-tab="log">取引メモ</button>
     <button data-tab="craft">製作</button>
     <button data-tab="quna">クーナ</button>
     <button data-tab="settings">設定</button>
   </nav>
 </header>
 <main id="main"></main>
+<div id="sheet"><div class="body" id="sheetBody"></div></div>
 <datalist id="itemlist"></datalist>
 
 <script>
 "use strict";
-// ── 状態 ──────────────────────────────────────────────
+// ── 保存 ──────────────────────────────────────────────
 const LS = {
   get(k, d){ try{ const v = localStorage.getItem("a2pf."+k); return v==null ? d : JSON.parse(v); }catch(e){ return d; } },
   set(k, v){ try{ localStorage.setItem("a2pf."+k, JSON.stringify(v)); }catch(e){} }
 };
-const DEFAULTS = { tax:10, fee:2, minSold:3, minProfit:5000, minMargin:5, conservative:true, flipSort:"daily", yenPerQuna:"" };
+const DEFAULTS = { tax:10, fee:2, minSold:3, minProfit:5000, minMargin:5, conservative:true, flipSort:"daily", yenPerQuna:"", staleDays:3 };
 let S = Object.assign({}, DEFAULTS, LS.get("settings", {}));
-let INDEX = null, DATA = null, ITEMS = [], BYKEY = {}, NAMES = {}, TAB = LS.get("tab", "flip");
+let INDEX = null, DATA = null, ITEMS = [], BYKEY = {}, TAB = LS.get("tab", "flip");
+let NAMES_NC = {}, NAMES_JA = {};
 let RECIPES = LS.get("recipes", null);
 let CAT = LS.get("cat", {sec:"", c:""});
 let CHESTS = LS.get("chests", [[400000,185],[2000000,930],[10000000,4998]]);
+let FAVS = LS.get("favs", {});          // {itemKey: true}
+let MANUAL = LS.get("manual", {});      // {"server:item": {last, avg, lo, hi, at}}
+let OFFICIAL = LS.get("official", {});  // {itemKey: 正式名}
+let TRADES = LS.get("trades", []);      // [{id, sid, k, type:"buy"|"sell", qty, price, at, extra, note}]
+let UI = Object.assign({flipManualOnly:false, moveDir:"down", moveBasis:"ch24", logRange:"7", logView:"sum"}, LS.get("ui", {}));
+const saveUI = () => LS.set("ui", UI);
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const SID = () => String($("#server").value || "");
 
 // ── 書式 ──────────────────────────────────────────────
 function kina(n){
@@ -106,33 +138,41 @@ function kina(n){
   return sign + Math.round(a).toLocaleString("ja-JP");
 }
 const full = n => n == null || !isFinite(n) ? "—" : Math.round(n).toLocaleString("ja-JP");
+const signed = n => n == null || !isFinite(n) ? "—" : (n>0?"+":"") + kina(n);
 const pct = (x, d=0) => x == null || !isFinite(x) ? "—" : (x>0?"+":"") + (x*100).toFixed(d) + "%";
 const cls = x => x > 0 ? "up" : x < 0 ? "down" : "";
 function ago(ts){
   if(!ts) return "不明";
   const m = Math.round((Date.now() - new Date(ts).getTime())/60000);
-  if(m < 60) return m + "分前";
+  if(m < 60) return Math.max(0,m) + "分前";
   if(m < 48*60) return Math.round(m/60) + "時間前";
   return Math.round(m/1440) + "日前";
 }
+function dt(ts){ const d = new Date(ts); return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`; }
 const netRate = () => 1 - S.tax/100 - S.fee/100;
-// ひらがなで検索してもカタカナ名に当たるようにする
-const toKata = s => String(s||"").replace(/[\u3041-\u3096]/g, c => String.fromCharCode(c.charCodeAt(0)+0x60));
-// カテゴリーの日本語表示（APIは英語。正式訳と違う場合あり）
+const toKata = s => String(s||"").replace(/[ぁ-ゖ]/g, c => String.fromCharCode(c.charCodeAt(0)+0x60));
+const parseNum = v => { const n = parseFloat(String(v||"").replace(/[,，\s]/g,"")); return isFinite(n) ? n : null; };
+
+// ── カテゴリー ─────────────────────────────────────────
 const SEC_JA = {"Weapons":"武器","Armor":"防具","Accessories":"アクセサリー","Materials":"素材","Consumables & collectibles":"消耗品","Skins":"スキン","Other":"その他"};
 const SEC_ICON = {"Weapons":"⚔️","Armor":"🛡️","Accessories":"💍","Materials":"🪨","Consumables & collectibles":"🧪","Skins":"👘","Other":"📦"};
 const CAT_JA = {"Boots":"靴","Breastplates":"胴","Cloaks":"マント","Helms":"兜","Pauldrons":"肩","Greaves":"脚","Gloves":"手袋","Earrings":"イヤリング","Necklaces":"ネックレス","Rings":"指輪","Belts":"ベルト","Bracelets":"ブレスレット","Bows":"弓","Daggers":"短剣","Greatswords":"大剣","Guards":"盾","Shields":"盾","Longswords":"長剣","Swords":"剣","Maces":"メイス","Orbs":"宝珠","Spellbooks":"魔導書","Staves":"杖","Polearms":"槍","Amplify stones":"増幅石","Armor skins":"防具スキン","Accessory skins":"アクセサリースキン","Weapon skins":"武器スキン","Accessories":"アクセサリー","Artwork":"アートワーク","Crafting materials":"製作素材","Gathered resources":"採集物","Food":"料理","Manastones & soulstones":"魔石・霊石","Potions & serums":"ポーション・秘薬","Sealed wings":"封印された翼","Transformation candy":"変身キャンディ","Wings":"翼","Other items":"その他","Other":"その他"};
 const secJa = v => SEC_JA[v] || v || "その他";
 const catJa = v => CAT_JA[v] || v || "";
-function inCat(it){ return (!CAT.sec || it.sec === CAT.sec) && (!CAT.c || it.c === CAT.c); }
+function inCat(it){
+  if(CAT.sec === "★") return !!FAVS[it.k];
+  return (!CAT.sec || it.sec === CAT.sec) && (!CAT.c || it.c === CAT.c);
+}
 function catBar(){
-  const secs = [], cnt = {};
-  for(const it of ITEMS){ const k = it.sec || "Other"; if(!(k in cnt)){ cnt[k]=0; secs.push(k); } cnt[k]++; }
-  const order = Object.keys(SEC_JA);
-  secs.sort((a,b)=>(order.indexOf(a)+99*(order.indexOf(a)<0))-(order.indexOf(b)+99*(order.indexOf(b)<0)));
+  const secs = [], seen = {};
+  for(const it of ITEMS){ const k = it.sec || "Other"; if(!seen[k]){ seen[k]=1; secs.push(k); } }
+  const order = Object.keys(SEC_JA), ix = k => { const i = order.indexOf(k); return i<0 ? 99 : i; };
+  secs.sort((a,b)=>ix(a)-ix(b));
+  const nf = ITEMS.filter(it=>FAVS[it.k]).length;
   let h = `<div class="chips"><button class="chip ${CAT.sec?"":"on"}" data-sec="">すべて</button>` +
+    `<button class="chip ${CAT.sec==="★"?"on":""}" data-sec="★">★ お気に入り${nf?" "+nf:""}</button>` +
     secs.map(k=>`<button class="chip ${CAT.sec===k?"on":""}" data-sec="${esc(k)}">${SEC_ICON[k]||""} ${esc(secJa(k))}</button>`).join("") + `</div>`;
-  if(CAT.sec){
+  if(CAT.sec && CAT.sec !== "★"){
     const cs = [];
     for(const it of ITEMS) if(it.sec===CAT.sec && it.c && !cs.includes(it.c)) cs.push(it.c);
     if(cs.length > 1) h += `<div class="chips sub"><button class="chip ${CAT.c?"":"on"}" data-c="">すべて</button>` +
@@ -140,13 +180,23 @@ function catBar(){
   }
   return h;
 }
-function iconOf(it){
-  const g = it.g ? " g-" + String(it.g).toLowerCase() : "";
-  if(it.ic) return `<img class="ic${g}" src="${esc(it.ic)}" alt="" loading="lazy" onerror="this.outerHTML='<span class=&quot;ic${g}&quot;>${SEC_ICON[it.sec]||"📦"}</span>'">`;
-  return `<span class="ic${g}">${SEC_ICON[it.sec]||"📦"}</span>`;
-}
-const sub = it => (it.j ? esc(it.en) + " ・ " : "") + esc(catJa(it.c));
 
+// ── 名前 ──────────────────────────────────────────────
+// 表示名の優先順：自分で入れた正式名 → NC公式の日本語名 → 直訳 → 英語名
+function applyNames(it){
+  it.off = OFFICIAL[it.k] || NAMES_NC[it.k] || null;
+  it.tr = NAMES_JA[it.k] || null;
+  it.n = it.off || it.tr || it.en;
+}
+function nameHtml(it){ return esc(it.n) + (!it.off && it.tr ? `<span class="tr">直訳</span>` : ""); }
+function subHtml(it){ return (it.n !== it.en ? esc(it.en) + " ・ " : "") + esc(catJa(it.c)); }
+function matchQ(it, q){
+  if(!q) return true;
+  const kq = toKata(q.toLowerCase());
+  return [it.off, it.tr, it.en, catJa(it.c)].some(v => v && toKata(String(v).toLowerCase()).includes(kq));
+}
+
+// ── 部品 ──────────────────────────────────────────────
 function spark(sp){
   if(!sp || sp.filter(v=>v!=null).length < 2) return "";
   const v = sp.filter(x=>x!=null), lo = Math.min(...v), hi = Math.max(...v), W = 300, H = 34, n = sp.length;
@@ -154,10 +204,50 @@ function spark(sp){
   sp.forEach((y,i)=>{
     if(y == null){ pen = false; return; }
     const X = (i/(n-1))*W, Y = hi===lo ? H/2 : H-3 - (y-lo)/(hi-lo)*(H-6);
-    d += (pen ? "L" : "M") + X.toFixed(1) + " " + Y.toFixed(1);
-    pen = true;
+    d += (pen ? "L" : "M") + X.toFixed(1) + " " + Y.toFixed(1); pen = true;
   });
-  return `<svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-label="7日間の最安値推移"><path d="${d}" fill="none" stroke="var(--blue)" stroke-width="1.6" vector-effect="non-scaling-stroke"/></svg>`;
+  return `<svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><path d="${d}" fill="none" stroke="var(--blue)" stroke-width="1.6" vector-effect="non-scaling-stroke"/></svg>`;
+}
+const iconOf = it => `<span class="ic">${SEC_ICON[it.sec]||"📦"}</span>`;
+const starBtn = it => `<button class="star ${FAVS[it.k]?"on":""}" data-star="${esc(it.k)}" aria-label="お気に入り">${FAVS[it.k]?"★":"☆"}</button>`;
+function head(it, right){
+  return `<div class="row"><div class="hd">${iconOf(it)}<div><div class="name">${nameHtml(it)}</div><div class="cat">${subHtml(it)}</div></div></div>
+    <div style="display:flex;gap:4px;align-items:flex-start"><div class="right">${right||""}</div>${starBtn(it)}</div></div>`;
+}
+const salesLabel = it => it.est ? "24h売れ数(推定)" : "24h販売";
+
+// ── 手入力 ─────────────────────────────────────────────
+const mkey = k => SID() + ":" + k;
+function manualOf(it){
+  const m = MANUAL[mkey(it.k)];
+  if(!m || !m.last) return null;
+  const days = (Date.now() - new Date(m.at).getTime())/86400000;
+  return Object.assign({}, m, {days, stale: days >= S.staleDays});
+}
+function manualTag(it){
+  const m = manualOf(it);
+  if(!m) return FAVS[it.k] ? `<span class="tag">手入力なし</span>` : "";
+  return m.stale ? `<span class="tag warn">手入力 ${ago(m.at)}・要更新</span>` : `<span class="tag gold">手入力 ${ago(m.at)}</span>`;
+}
+
+// ── 計算 ──────────────────────────────────────────────
+// 売れる見込み価格：手入力（ゲーム内の取引価格）があればそれ、なければ24h相場と7日中央値
+function refPrice(it){
+  const m = manualOf(it);
+  if(m){
+    const c = [m.last, m.avg].filter(v => v > 0);
+    return { v: S.conservative ? Math.min(...c) : m.last, src: "手入力" };
+  }
+  const c = [it.a, it.m7].filter(v => v != null && v > 0);
+  if(!c.length) return null;
+  return { v: S.conservative ? Math.min(...c) : (it.a || it.m7), src: "推定" };
+}
+function flipOf(it){
+  if(!it.p) return null;
+  const r = refPrice(it);
+  if(!r) return null;
+  const profit = r.v*netRate() - it.p;
+  return { ref: r.v, src: r.src, profit, margin: profit/it.p, daily: profit*Math.min(it.s||1, 20) };
 }
 
 // ── データ ────────────────────────────────────────────
@@ -169,7 +259,8 @@ async function getJSON(path){
 async function boot(){
   try{ INDEX = await getJSON("data/index.json"); }
   catch(e){ $("#meta").textContent = "データがまだありません（収集を一度実行してください）"; INDEX = {servers:[], all_servers:[]}; }
-  try{ NAMES = await getJSON("data/names.json"); }catch(e){ NAMES = {}; }
+  try{ NAMES_NC = await getJSON("data/names.json"); }catch(e){ NAMES_NC = {}; }
+  try{ NAMES_JA = await getJSON("data/names_ja.json"); }catch(e){ NAMES_JA = {}; }
   if(INDEX.defaults && !LS.get("settings", null)){
     S.tax = Math.round(INDEX.defaults.tax_rate*1000)/10; S.fee = Math.round(INDEX.defaults.fee_rate*1000)/10;
   }
@@ -182,115 +273,223 @@ async function boot(){
   const saved = LS.get("server", null);
   if(saved && [...sel.options].some(o=>o.value==saved)) sel.value = saved;
   sel.onchange = () => { LS.set("server", sel.value); loadServer(); };
-  document.querySelectorAll("#tabs button").forEach(b => b.onclick = () => { TAB = b.dataset.tab; LS.set("tab", TAB); render(); });
+  document.querySelectorAll("#tabs button").forEach(b => b.onclick = () => { TAB = b.dataset.tab; LS.set("tab", TAB); render(); window.scrollTo(0,0); });
+  $("#sheet").onclick = e => { if(e.target.id === "sheet") closeSheet(); };
   await loadServer();
 }
 async function loadServer(){
-  const sid = $("#server").value;
+  const sid = SID();
   if(!sid){ DATA = null; ITEMS = []; BYKEY = {}; $("#meta").textContent = "config.json にサーバーを設定してください（設定タブに一覧あり）"; render(); return; }
   try{ DATA = await getJSON(`data/s/${sid}.json`); }
   catch(e){ DATA = null; ITEMS = []; BYKEY = {}; $("#meta").textContent = "このサーバーのデータを読めませんでした"; render(); return; }
   ITEMS = DATA.items || [];
-  for(const it of ITEMS){ it.en = it.n; it.j = NAMES[it.k] || null; it.n = it.j || it.en; }
+  for(const it of ITEMS){ it.en = it.n; applyNames(it); }
   BYKEY = Object.fromEntries(ITEMS.map(i=>[i.k,i]));
-  $("#itemlist").innerHTML = ITEMS.map(i=>`<option value="${esc(i.n)} #${esc(i.k)}">${i.j?esc(i.en):""}</option>`).join("");
+  refreshDatalist();
   $("#meta").textContent = `相場 ${ago(DATA.captured_at)}の値 ・ ${ITEMS.length}品目 ・ 出典 aion2.exchange（非公式）`;
   render();
 }
-
-// ── 計算 ──────────────────────────────────────────────
-// 売れる見込み価格：24h販売平均と7日中央値。慎重モードでは低いほうを使う
-function refPrice(it){
-  const c = [it.a, it.m7].filter(v => v != null && v > 0);
-  if(!c.length) return null;
-  return S.conservative ? Math.min(...c) : (it.a || it.m7);
+function refreshDatalist(){
+  $("#itemlist").innerHTML = ITEMS.map(i=>`<option value="${esc(i.n)} #${esc(i.k)}">${i.n!==i.en?esc(i.en):""}</option>`).join("");
 }
-function flipOf(it){
-  if(!it.p || !it.s) return null;
-  const ref = refPrice(it);
-  if(!ref) return null;
-  const profit = ref*netRate() - it.p;
-  return { ref, profit, margin: profit/it.p, daily: profit*Math.min(it.s, 20) };
+function pickKey(v){
+  const m = String(v||"").match(/#([^#\s]+)\s*$/);
+  if(m && BYKEY[m[1]]) return m[1];
+  const t = String(v||"").trim();
+  const hit = ITEMS.find(i => i.n === t || i.en === t);
+  return hit ? hit.k : null;
 }
+const labelOf = k => BYKEY[k] ? `${BYKEY[k].n} #${k}` : (k||"");
 
 // ── 画面：転売 ───────────────────────────────────────
 function viewFlip(){
   const rows = [];
   for(const it of ITEMS){
     if(!inCat(it)) continue;
+    if(UI.flipManualOnly && !manualOf(it)) continue;
     const f = flipOf(it);
     if(!f) continue;
-    if(it.s < S.minSold || f.profit < S.minProfit || f.margin < S.minMargin/100) continue;
+    const hasManual = f.src === "手入力";
+    if(!hasManual && (it.s||0) < S.minSold) continue;
+    if(f.profit < S.minProfit || f.margin < S.minMargin/100) continue;
     rows.push([it, f]);
   }
   const key = {daily:r=>r[1].daily, unit:r=>r[1].profit, margin:r=>r[1].margin}[S.flipSort] || (r=>r[1].daily);
-  rows.sort((a,b)=>key(b)-key(a));
-  let h = `<p class="hint">今の最安出品を買い、売れている価格で出し直したときに、税${S.tax}%・出品手数料${S.fee}%を引いても利益が残るものです。</p>
+  rows.sort((a,b)=>(!!FAVS[b[0].k]-!!FAVS[a[0].k]) || key(b)-key(a));
+  let h = `<p class="hint">今の最安出品を買い、売値の目安で出し直したときに、税${S.tax}%・出品手数料${S.fee}%を引いても利益が残るもの。ゲーム内の取引価格を手入力した品は、その値で計算します。</p>
   ${catBar()}<div class="bar"><select id="flipSort">
     <option value="daily">並び：売れ数込みの利益見込み</option><option value="unit">並び：1個あたり利益</option><option value="margin">並び：利益率</option>
-  </select></div>`;
+  </select><button id="flipManual" class="${UI.flipManualOnly?"primary":""}" style="flex:none">手入力済みのみ</button></div>`;
   if(!rows.length) h += `<div class="empty">条件に合う品はありません。<br>設定タブでしきい値を下げると増えます。</div>`;
-  for(const [it,f] of rows.slice(0,60)){
+  for(const [it,f] of rows.slice(0,80)){
     const tags = [];
-    if(it.m7 == null) tags.push(`<span class="tag warn">履歴なし・24h平均のみ</span>`);
+    if(f.src === "推定" && it.m7 == null) tags.push(`<span class="tag warn">履歴が少ない</span>`);
     if(it.lo7 != null && it.p < it.lo7) tags.push(`<span class="tag good">7日の最安値を更新</span>`);
     if(it.m7 && it.p < it.m7*0.5) tags.push(`<span class="tag warn">相場の半額以下・誤出品かも</span>`);
     if(it.l != null && it.l <= 2) tags.push(`<span class="tag warn">出品${it.l}件のみ</span>`);
-    if(it.s >= 20) tags.push(`<span class="tag good">よく動く</span>`);
-    h += `<div class="card">
-      <div class="row"><div class="hd">${iconOf(it)}<div><div class="name">${esc(it.n)}</div><div class="cat">${sub(it)}</div></div></div>
-        <div class="right"><div class="big up">+${kina(f.profit)}</div><div class="small">1個あたり（${pct(f.margin)}）</div></div></div>
+    tags.push(manualTag(it));
+    h += `<div class="card tap ${FAVS[it.k]?"fav":""}" data-open="${esc(it.k)}">
+      ${head(it, `<div class="big up">+${kina(f.profit)}</div><div class="small">1個あたり（${pct(f.margin)}）</div>`)}
       <div class="grid">
-        <span>買う（最安）</span><span>${full(it.p)}</span>
-        <span>売る目安</span><span>${full(f.ref)}</span>
+        <span>買う（今の最安）</span><span>${full(it.p)}</span>
+        <span>売値の目安（${f.src}）</span><span>${full(f.ref)}</span>
         <span>手取り/個</span><span>${full(f.ref*netRate())}</span>
-        <span>${it.est?"24h売れ数(推定)":"24h販売"} / 出品</span><span>${full(it.s)} / ${full(it.l)}件</span>
-        <span>7日中央値</span><span>${full(it.m7)}</span>
-        <span>利益×24h売れ数<br><span class="small">（20個まで）</span></span><span class="gold">${kina(f.daily)}</span>
+        <span>${salesLabel(it)} / 出品</span><span>${full(it.s)} / ${full(it.l)}件</span>
       </div>${spark(it.sp)}<div class="tags">${tags.join("")}</div></div>`;
+  }
+  return h;
+}
+
+// ── 画面：値動き ─────────────────────────────────────
+function changeOf(it){
+  if(UI.moveBasis === "ch6") return it.ch6;
+  if(UI.moveBasis === "ch24"){
+    if(it.ch24 != null) return it.ch24;
+    if(it.chA != null && it.chB >= 18*3600 && it.chB <= 36*3600) return it.chA/100;
+    return null;
+  }
+  return it.m7 && it.p ? it.p/it.m7 - 1 : null; // 7日中央値比
+}
+function viewMove(){
+  const dir = UI.moveDir;
+  let list = ITEMS.filter(it => it.p && inCat(it) && (it.l||0) >= 2).map(it => [it, changeOf(it)]).filter(([,c]) => c != null && (dir==="down" ? c < -0.02 : c > 0.02));
+  list.sort((a,b)=> dir==="down" ? a[1]-b[1] : b[1]-a[1]);
+  let h = `<p class="hint">最安値が大きく動いた品です。値下がりは買い場の候補、値上がりは手持ちを売る候補になります（出品が1件だけの品は除外）。</p>
+  <div class="seg"><button data-dir="down" class="${dir==="down"?"on":""}">▼ 値下がり</button><button data-dir="up" class="${dir==="up"?"on":""}">▲ 値上がり</button></div>
+  <div class="seg"><button data-basis="ch6" class="${UI.moveBasis==="ch6"?"on":""}">6時間前比</button><button data-basis="ch24" class="${UI.moveBasis==="ch24"?"on":""}">24時間前比</button><button data-basis="m7" class="${UI.moveBasis==="m7"?"on":""}">7日中央値比</button></div>
+  ${catBar()}`;
+  if(!list.length) h += `<div class="empty">該当する品はありません。<br>履歴がたまるほど増えます。</div>`;
+  for(const [it,c] of list.slice(0,80)){
+    const f = flipOf(it);
+    h += `<div class="card tap ${FAVS[it.k]?"fav":""}" data-open="${esc(it.k)}">
+      ${head(it, `<div class="big ${cls(c)}">${pct(c)}</div><div class="small">${{ch6:"6時間前比",ch24:"24時間前比",m7:"7日中央値比"}[UI.moveBasis]}</div>`)}
+      <div class="grid">
+        <span>今の最安</span><span>${full(it.p)}</span>
+        <span>7日中央値</span><span>${full(it.m7)}</span>
+        <span>${salesLabel(it)} / 出品</span><span>${full(it.s)} / ${full(it.l)}件</span>
+        ${f && f.profit > 0 ? `<span>転売の利益/個</span><span class="up">+${full(f.profit)}</span>` : ""}
+      </div>${spark(it.sp)}<div class="tags">${manualTag(it)}</div></div>`;
   }
   return h;
 }
 
 // ── 画面：売り時 ─────────────────────────────────────
 function viewSell(){
-  const q = (LS.get("sellQ","")||"").trim().toLowerCase();
-  let list = ITEMS.filter(it => it.p && inCat(it));
-  const kq = toKata(q);
-  if(q) list = list.filter(it => toKata((it.j||"").toLowerCase()).includes(kq) || (it.en||"").toLowerCase().includes(q) || catJa(it.c).includes(q));
-  else if(!CAT.sec) list = list.filter(it => (it.s||0) >= S.minSold || !ITEMS.some(x=>x.s));
-  list.sort((a,b)=>((b.s||0)*(b.a||b.p)) - ((a.s||0)*(a.a||a.p)) || (b.l||0)-(a.l||0) || b.p-a.p);
-  let h = `<p class="hint">手持ちの品をいくらで出せば売れるか、今が売り時かを見ます。カテゴリーを選ぶか、名前で絞り込めます。</p>
-  ${catBar()}<div class="bar"><input id="sellQ" type="search" placeholder="アイテム名で検索（日本語・英語）" value="${esc(LS.get("sellQ",""))}"></div>`;
+  const q = (LS.get("sellQ","")||"").trim();
+  let list = ITEMS.filter(it => it.p && inCat(it) && matchQ(it, q));
+  if(!q && !CAT.sec) list = list.filter(it => FAVS[it.k] || (it.s||0) >= S.minSold || holdQty(it.k) > 0);
+  list.sort((a,b)=>(!!FAVS[b.k]-!!FAVS[a.k]) || (holdQty(b.k)>0)-(holdQty(a.k)>0) || ((b.s||0)*(b.a||b.p)) - ((a.s||0)*(a.a||a.p)) || (b.l||0)-(a.l||0));
+  let h = `<p class="hint">手持ちの品をいくらで出せば売れるか、今が売り時かを見ます。お気に入りと、取引メモで保有中の品が上に並びます。</p>
+  ${catBar()}<div class="bar"><input id="sellQ" type="search" placeholder="名前で絞り込み（日本語・英語）" value="${esc(q)}"></div>`;
   if(!list.length) h += `<div class="empty">該当する品はありません。</div>`;
   if(list.length > 150) h += `<p class="small">${list.length}件中150件を表示中。カテゴリーで絞り込んでください。</p>`;
   for(const it of list.slice(0,150)){
-    const ask = Math.max(1, it.p - 1), dev = it.m7 ? it.p/it.m7 - 1 : null;
-    let st = `<span class="tag">7日の履歴なし</span>`;
-    if(dev != null) st = dev >= 0.05 ? `<span class="tag good">売り時（7日中央値より${pct(dev)}）</span>` : dev <= -0.05 ? `<span class="tag bad">待ち（7日中央値より${pct(dev)}）</span>` : `<span class="tag">相場どおり</span>`;
-    h += `<div class="card">
-      <div class="row"><div class="hd">${iconOf(it)}<div><div class="name">${esc(it.n)}</div><div class="cat">${sub(it)}</div></div></div>
-        <div class="right"><div class="big">${kina(ask*netRate())}</div><div class="small">手取り/個</div></div></div>
+    const ask = Math.max(1, it.p - 1), base = manualOf(it)?.avg || it.m7, dev = base ? it.p/base - 1 : null;
+    let st = `<span class="tag">比較できる履歴なし</span>`;
+    if(dev != null) st = dev >= 0.05 ? `<span class="tag good">売り時（${manualOf(it)?.avg?"28日平均":"7日中央値"}より${pct(dev)}）</span>` : dev <= -0.05 ? `<span class="tag bad">待ち（${pct(dev)}）</span>` : `<span class="tag">相場どおり</span>`;
+    const hq = holdQty(it.k), hc = holdCost(it.k);
+    h += `<div class="card tap ${FAVS[it.k]?"fav":""}" data-open="${esc(it.k)}">
+      ${head(it, `<div class="big">${kina(ask*netRate())}</div><div class="small">手取り/個</div>`)}
       <div class="grid">
         <span>出品価格の目安</span><span>${full(ask)}</span>
-        <span>今の最安</span><span>${full(it.p)}</span>
-        <span>${it.est?"24h相場(最安の中央値)":"24h販売平均"}</span><span>${full(it.a)}</span>
-        <span>${it.est?"24h売れ数(推定)":"24h販売"} / 出品</span><span>${full(it.s)} / ${full(it.l)}件</span>
-      </div>${spark(it.sp)}<div class="tags">${st}</div></div>`;
+        <span>${it.est?"24h相場":"24h販売平均"} / 7日中央値</span><span>${full(it.a)} / ${full(it.m7)}</span>
+        <span>${salesLabel(it)} / 出品</span><span>${full(it.s)} / ${full(it.l)}件</span>
+        ${hq>0?`<span>保有 ${hq}個（平均取得）</span><span>${full(hc)} → <b class="${cls(ask*netRate()-hc)}">${signed((ask*netRate()-hc)*hq)}</b></span>`:""}
+      </div>${spark(it.sp)}<div class="tags">${st}${manualTag(it)}</div></div>`;
   }
   return h;
 }
 
-// ── 画面：製作 ───────────────────────────────────────
-function pickKey(v){
-  const m = String(v||"").match(/#([^#\s]+)\s*$/);
-  if(m && BYKEY[m[1]]) return m[1];
-  const hit = ITEMS.find(i => i.n === String(v||"").trim());
-  return hit ? hit.k : null;
+// ── 取引メモ ──────────────────────────────────────────
+// 売却の手取り＝価格×数量×(1−税)−出品手数料（価格×数量×手数料率）−追加費用。利益は移動平均の取得単価で計算
+function ledger(sid){
+  const pos = {}, out = [];
+  const list = TRADES.filter(t => String(t.sid) === String(sid)).sort((a,b)=>new Date(a.at)-new Date(b.at));
+  for(const t of list){
+    const p = pos[t.k] || (pos[t.k] = {qty:0, cost:0});
+    if(t.type === "buy"){
+      const amt = t.price*t.qty + (t.extra||0);
+      p.cost += amt; p.qty += t.qty;
+      out.push(Object.assign({}, t, {amount:-amt}));
+    }else{
+      const tax = t.price*t.qty*(t.tax ?? S.tax)/100, fee = t.price*t.qty*(t.fee ?? S.fee)/100;
+      const net = t.price*t.qty - tax - fee - (t.extra||0);
+      const unit = p.qty > 0 ? p.cost/p.qty : 0, used = Math.min(t.qty, p.qty);
+      const costOut = unit*used;
+      p.cost -= costOut; p.qty -= used;
+      out.push(Object.assign({}, t, {amount:net, tax, fee, profit: net - costOut, noCost: used < t.qty}));
+    }
+  }
+  return {pos, rows: out};
 }
+function holdQty(k){ return (ledger(SID()).pos[k]||{}).qty || 0; }
+function holdCost(k){ const p = ledger(SID()).pos[k]; return p && p.qty>0 ? p.cost/p.qty : null; }
+function saveTrades(){ LS.set("trades", TRADES); }
+function tradeForm(pref){
+  const t = Object.assign({type:"buy", k:"", qty:1, price:"", extra:"", at:new Date().toISOString()}, pref||{});
+  const local = new Date(new Date(t.at).getTime() - new Date().getTimezoneOffset()*60000).toISOString().slice(0,16);
+  return `<div class="card form" id="tradeForm">
+    <div class="seg" style="margin:0 0 4px"><button type="button" data-ttype="buy" class="${t.type==="buy"?"on":""}">買った</button><button type="button" data-ttype="sell" class="${t.type==="sell"?"on":""}">売れた</button></div>
+    <input type="hidden" id="tType" value="${t.type}"><input type="hidden" id="tId" value="${esc(t.id||"")}">
+    <label>アイテム</label><input id="tItem" list="itemlist" placeholder="名前で選ぶ" value="${esc(labelOf(t.k))}">
+    <div class="two"><div><label>数量</label><input id="tQty" type="number" min="1" value="${t.qty}"></div>
+    <div><label>単価（キナ）</label><input id="tPrice" inputmode="numeric" value="${t.price===""?"":t.price}"></div></div>
+    <div class="two"><div><label>${t.type==="sell"?"出し直しなどの追加手数料":"その他の費用"}</label><input id="tExtra" inputmode="numeric" value="${t.extra||""}" placeholder="0"></div>
+    <div><label>日時</label><input id="tAt" type="datetime-local" value="${local}"></div></div>
+    <p class="small" id="tPreview"></p>
+    <div class="bar" style="margin:6px 0 0"><button class="primary" id="tSave">${t.id?"更新":"記録する"}</button>${t.id?`<button id="tCancel">やめる</button>`:""}</div>
+  </div>`;
+}
+function viewLog(){
+  const sid = SID(), L = ledger(sid);
+  const days = UI.logRange === "all" ? 1e9 : +UI.logRange;
+  const since = Date.now() - days*86400000;
+  const inRange = L.rows.filter(r => new Date(r.at).getTime() >= since);
+  const sells = inRange.filter(r => r.type === "sell");
+  const profit = sells.reduce((a,r)=>a+r.profit,0), sales = sells.reduce((a,r)=>a+r.price*r.qty,0);
+  const costs = sells.reduce((a,r)=>a+r.tax+r.fee+(r.extra||0),0), bought = inRange.filter(r=>r.type==="buy").reduce((a,r)=>a-r.amount,0);
+  let h = `<div class="seg">${[["1","今日"],["7","7日"],["30","30日"],["all","全部"]].map(([v,l])=>`<button data-range="${v}" class="${UI.logRange===v?"on":""}">${l}</button>`).join("")}</div>
+  <div class="kpi"><div><span>確定した利益</span><b class="${cls(profit)}">${signed(profit)}</b></div><div><span>売上</span><b>${kina(sales)}</b></div><div><span>税・手数料</span><b>${kina(costs)}</b></div></div>
+  <p class="small">利益＝手取り−買値（同じ品の平均取得単価）。買い記録のない品（ドロップ品など）は買値0として計算します。期間内の仕入れ ${kina(bought)}。</p>`;
+  const ed = LS.get("tradeEdit", null), editing = ed ? TRADES.find(t=>t.id===ed) : null;
+  h += `<details ${editing?"open":""} id="tradeBox"><summary>${editing?"記録を編集":"＋ 取引を記録"}</summary>${tradeForm(editing)}</details>`;
+  // 保有中
+  const held = Object.entries(L.pos).filter(([,p])=>p.qty>0);
+  if(held.length){
+    let tot = 0;
+    const rows = held.map(([k,p])=>{
+      const it = BYKEY[k], unit = p.cost/p.qty, now = it?.p ? Math.max(1,it.p-1)*netRate() : null, pl = now!=null ? (now-unit)*p.qty : null;
+      if(pl!=null) tot += pl;
+      return `<tr class="tap" data-open="${esc(k)}"><td>${it?nameHtml(it):esc(k)}</td><td>${p.qty}</td><td>${full(unit)}</td><td class="${cls(pl)}">${signed(pl)}</td></tr>`;
+    }).join("");
+    h += `<div class="card"><div class="row"><div class="name">保有中</div><div class="small">今売った場合 <b class="${cls(tot)}">${signed(tot)}</b></div></div>
+      <table><tr><th>品目</th><th>数</th><th>取得単価</th><th>含み損益</th></tr>${rows}</table></div>`;
+  }
+  // 品目別
+  const by = {};
+  for(const r of sells){ const b = by[r.k] || (by[r.k] = {n:0, profit:0}); b.n += r.qty; b.profit += r.profit; }
+  const ranked = Object.entries(by).sort((a,b)=>b[1].profit-a[1].profit);
+  if(ranked.length) h += `<div class="card"><div class="name">品目別の利益</div><table><tr><th>品目</th><th>売った数</th><th>利益</th></tr>${ranked.map(([k,b])=>`<tr class="tap" data-open="${esc(k)}"><td>${BYKEY[k]?nameHtml(BYKEY[k]):esc(k)}</td><td>${b.n}</td><td class="${cls(b.profit)}">${signed(b.profit)}</td></tr>`).join("")}</table></div>`;
+  // 履歴
+  const hist = inRange.slice().reverse();
+  h += `<div class="card"><div class="name">履歴</div>`;
+  if(!hist.length) h += `<div class="empty">この期間の記録はありません。</div>`;
+  for(const r of hist.slice(0,200)){
+    const it = BYKEY[r.k];
+    h += `<div style="border-top:1px solid var(--line);padding:7px 0">
+      <div class="row"><div><span class="tag ${r.type==="buy"?"":"good"}">${r.type==="buy"?"買い":"売り"}</span> <b>${it?nameHtml(it):esc(r.k)}</b> ×${r.qty}</div><div class="small">${dt(r.at)}</div></div>
+      <div class="row small"><span>単価 ${full(r.price)}${r.extra?` ・ 追加 ${full(r.extra)}`:""}</span>
+      <span>${r.type==="buy"?`支払 ${full(-r.amount)}`:`手取り ${full(r.amount)} ・ 利益 <b class="${cls(r.profit)}">${signed(r.profit)}</b>${r.noCost?" (一部買値なし)":""}`}</span></div>
+      <div style="text-align:right;margin-top:3px"><button class="small" data-tedit="${r.id}" style="padding:2px 8px">編集</button> <button class="small" data-tdel="${r.id}" style="padding:2px 8px">削除</button></div></div>`;
+  }
+  h += `</div>`;
+  return h;
+}
+
+// ── 画面：製作 ───────────────────────────────────────
 function craftCalc(r){
   const out = BYKEY[r.output?.key];
-  let cost = r.extra || 0, matSell = 0, missing = [];
+  let cost = r.extra || 0, matSell = 0; const missing = [];
   for(const m of r.materials||[]){
     const it = BYKEY[m.key];
     if(!it || !it.p){ missing.push(it ? it.n : m.key); continue; }
@@ -298,41 +497,40 @@ function craftCalc(r){
   }
   if(!out || !out.p) missing.push(out ? out.n : "完成品");
   const outQty = r.output?.qty || 1;
-  const revenue = out && out.p ? Math.max(1,out.p-1)*outQty*netRate() : null;
+  const rp = out ? (refPrice(out)?.v || out.p) : null;
+  const revenue = rp ? Math.min(rp, out.p ? out.p-1 : rp)*outQty*netRate() : null;
   return { out, cost, matSell, revenue, profit: revenue==null?null:revenue-cost, vsSell: revenue==null?null:revenue-(matSell+(r.extra||0)), missing };
 }
 function viewCraft(){
-  let h = `<p class="hint">素材を最安値で買って作り、完成品を出品した場合の損益です。手持ちの素材を使うなら「素材をそのまま売る」との差も見てください。</p>`;
+  let h = `<p class="hint">素材を最安値で買って作り、完成品を出品した場合の損益です。手持ちの素材を使うなら「素材のまま売るより」を見てください。</p>`;
   if(!RECIPES.length) h += `<div class="empty">レシピがまだありません。下の「レシピを追加」から登録します。</div>`;
   RECIPES.forEach((r,idx)=>{
     const c = craftCalc(r);
-    h += `<div class="card"><div class="row"><div><div class="name">${esc(r.name || c.out?.n || "レシピ")}</div>
-      <div class="cat">完成品 ${esc(c.out?.n||"?")} ×${r.output?.qty||1}</div></div>
-      <div class="right"><div class="big ${cls(c.profit)}">${c.profit==null?"—":(c.profit>0?"+":"")+kina(c.profit)}</div><div class="small">買って作る場合</div></div></div>
+    h += `<div class="card"><div class="row"><div class="hd">${c.out?iconOf(c.out):""}<div><div class="name">${esc(r.name || c.out?.n || "レシピ")}</div>
+      <div class="cat">完成品 ${c.out?nameHtml(c.out):"?"} ×${r.output?.qty||1}</div></div></div>
+      <div class="right"><div class="big ${cls(c.profit)}">${c.profit==null?"—":signed(c.profit)}</div><div class="small">買って作る場合</div></div></div>
       <div class="grid">
         <span>素材費（最安）</span><span>${full(c.cost)}</span>
         <span>完成品の手取り</span><span>${full(c.revenue)}</span>
         <span>素材のまま売るより</span><span class="${cls(c.vsSell)}">${c.vsSell==null?"—":(c.vsSell>0?"+":"")+full(c.vsSell)}</span>
-        <span>完成品の24h販売</span><span>${full(c.out?.s)}個</span>
+        <span>完成品の${c.out?salesLabel(c.out):"24h販売"}</span><span>${full(c.out?.s)}</span>
       </div>
       <details><summary class="small">素材の内訳</summary><table><tr><th>素材</th><th>数</th><th>単価</th><th>小計</th></tr>
-      ${(r.materials||[]).map(m=>{const it=BYKEY[m.key];return `<tr><td>${esc(it?it.n:m.key)}</td><td>${m.qty}</td><td>${full(it?.p)}</td><td>${full(it?.p?it.p*m.qty:null)}</td></tr>`}).join("")}
+      ${(r.materials||[]).map(m=>{const it=BYKEY[m.key];return `<tr><td>${it?nameHtml(it):esc(m.key)}</td><td>${m.qty}</td><td>${full(it?.p)}</td><td>${full(it?.p?it.p*m.qty:null)}</td></tr>`}).join("")}
       ${r.extra?`<tr><td>その他費用</td><td></td><td></td><td>${full(r.extra)}</td></tr>`:""}</table></details>
       ${c.missing.length?`<div class="tags"><span class="tag warn">価格なし：${esc(c.missing.join("、"))}</span></div>`:""}
       <div class="bar" style="margin:8px 0 0"><button data-edit="${idx}">編集</button><button data-del="${idx}">削除</button></div></div>`;
   });
   const ed = LS.get("editing", null);
   const r = ed != null && RECIPES[ed] ? RECIPES[ed] : {name:"", output:{key:"",qty:1}, materials:[{key:"",qty:1}], extra:0};
-  const label = k => BYKEY[k] ? `${BYKEY[k].n} #${k}` : (k||"");
   h += `<div class="card form"><details ${ed!=null?"open":""}><summary>${ed!=null?"レシピを編集":"レシピを追加"}</summary>
     <label>レシピ名（任意）</label><input id="rName" value="${esc(r.name)}">
-    <label>完成品と個数</label><div class="mat"><input id="rOut" list="itemlist" placeholder="アイテム名で検索" value="${esc(label(r.output.key))}"><input id="rOutQty" type="number" min="1" value="${r.output.qty||1}"><span></span></div>
-    <label>素材と個数（候補から選ぶ）</label><div id="rMats">
-    ${(r.materials.length?r.materials:[{key:"",qty:1}]).map(m=>`<div class="mat"><input class="mName" list="itemlist" placeholder="素材名" value="${esc(label(m.key))}"><input class="mQty" type="number" min="1" value="${m.qty}"><button class="mDel" type="button">×</button></div>`).join("")}
+    <label>完成品と個数</label><div class="mat"><input id="rOut" list="itemlist" placeholder="名前で選ぶ" value="${esc(labelOf(r.output.key))}"><input id="rOutQty" type="number" min="1" value="${r.output.qty||1}"><span></span></div>
+    <label>素材と個数</label><div id="rMats">
+    ${(r.materials.length?r.materials:[{key:"",qty:1}]).map(m=>`<div class="mat"><input class="mName" list="itemlist" placeholder="素材名" value="${esc(labelOf(m.key))}"><input class="mQty" type="number" min="1" value="${m.qty}"><button class="mDel" type="button">×</button></div>`).join("")}
     </div><button id="rAddMat" type="button">＋ 素材を追加</button>
     <label>マーケット外の費用（NPC素材・製作費など、キナ）</label><input id="rExtra" type="number" min="0" value="${r.extra||0}">
     <div class="bar" style="margin-top:10px"><button class="primary" id="rSave">保存</button>${ed!=null?`<button id="rCancel">やめる</button>`:""}</div>
-    <p class="small">レシピはこのスマホに保存されます。設定タブから書き出して recipes.json に貼ると、素材の7日履歴も優先して集めます。</p>
   </details></div>`;
   return h;
 }
@@ -342,9 +540,9 @@ function viewQuna(){
   const yen = parseFloat(S.yenPerQuna);
   const rows = CHESTS.map(([k,q])=>({k,q,rate:k/q}));
   const best = rows.reduce((b,r)=>r.rate>(b?.rate||0)?r:b, null);
-  let h = `<p class="hint">交換所のキナ箱の値段（ゲーム内で確認して入力）から、1クーナで何キナ買えるかを比べます。数字はこのスマホに保存されます。</p>
+  let h = `<p class="hint">交換所のキナ箱の値段（ゲーム内で確認して入力）から、1クーナで何キナ買えるかを比べます。</p>
   <div class="card"><table><tr><th>キナ箱</th><th>クーナ</th><th>キナ/クーナ</th><th>100万キナ</th></tr>
-  ${rows.map((r,i)=>`<tr><td><input class="cK" data-i="${i}" type="number" value="${r.k}" style="width:100%"></td>
+  ${rows.map((r,i)=>`<tr><td><input class="cK" data-i="${i}" type="number" value="${r.k}"></td>
     <td><input class="cQ" data-i="${i}" type="number" value="${r.q}" style="width:80px"></td>
     <td class="${r===best?"gold":""}">${full(r.rate)}</td><td>${(1e6/r.rate).toFixed(0)}Q${isFinite(yen)&&yen>0?"<br><span class='small'>約"+full(1e6/r.rate*yen)+"円</span>":""}</td></tr>`).join("")}
   </table><div class="bar" style="margin-top:8px"><button id="cAdd">＋ 行を追加</button><button id="cDel">最後の行を消す</button></div></div>
@@ -352,14 +550,8 @@ function viewQuna(){
   <input id="yen" type="number" step="0.01" value="${esc(S.yenPerQuna)}" placeholder="未入力なら円換算しません"></div>`;
   if(best && rows.length > 1){
     const worst = rows.reduce((w,r)=>r.rate<w.rate?r:w, rows[0]);
-    const spread = best.rate/worst.rate - 1;
     h += `<div class="card"><div class="name">いちばん得な箱：${kina(best.k)}キナ箱</div>
-    <p class="small">1クーナあたり ${full(best.rate)} キナ。いちばん割高な箱との差は ${pct(spread,1)} です。
-    安い箱を買って高い値付けの箱として出し直す差益は、受け取ったクーナが最大72時間保留されること、物質変換に週の上限があること、交換所の手数料を差し引いて考えてください。</p></div>`;
-  }
-  if(isFinite(yen) && yen>0 && best){
-    const top = ITEMS.map(it=>({it,f:flipOf(it)})).filter(x=>x.f && x.f.profit>0).sort((a,b)=>b.f.daily-a.f.daily)[0];
-    if(top) h += `<div class="card small">参考：転売1位「${esc(top.it.n)}」の利益見込み ${kina(top.f.daily)}キナは、クーナで買うと約${full(top.f.daily/best.rate*yen)}円分</div>`;
+    <p class="small">1クーナあたり ${full(best.rate)} キナ。いちばん割高な箱との差は ${pct(best.rate/worst.rate-1,1)}。受け取ったクーナは最大72時間保留され、物質変換には週の上限があります。</p></div>`;
   }
   return h;
 }
@@ -369,41 +561,147 @@ function viewSettings(){
   const num = (id, label, v, step="1") => `<label>${label}</label><input id="${id}" type="number" step="${step}" value="${v}">`;
   return `<div class="card form">
     <div class="two"><div>${num("sTax","販売税（%）",S.tax,"0.5")}</div><div>${num("sFee","出品手数料（%）",S.fee,"0.5")}</div></div>
-    <p class="small">税率はマーケット画面の右上に出ます。サーバー間マーケットが始まったらそちらの税率に変えてください。</p>
     <div class="two"><div>${num("sMinSold","24h売れ数の下限",S.minSold)}</div><div>${num("sMinMargin","利益率の下限（%）",S.minMargin)}</div></div>
-    ${num("sMinProfit","1個あたり利益の下限（キナ）",S.minProfit,"1000")}
-    <label><input id="sCons" type="checkbox" ${S.conservative?"checked":""} style="width:auto"> 慎重モード（売値は24h相場と7日中央値の低いほうで計算）</label>
+    <div class="two"><div>${num("sMinProfit","1個あたり利益の下限",S.minProfit,"1000")}</div><div>${num("sStale","手入力を古いとみなす日数",S.staleDays)}</div></div>
+    <label><input id="sCons" type="checkbox" ${S.conservative?"checked":""} style="width:auto"> 慎重モード（売値は複数の目安のうち低いほうで計算）</label>
     <div class="bar" style="margin-top:10px"><button class="primary" id="sSave">保存</button><button id="sReset">初期値に戻す</button></div>
   </div>
-  <div class="card form"><div class="name">レシピの書き出し・読み込み</div>
-    <p class="small">書き出した内容を GitHub の recipes.json に貼ると、どの端末でも同じレシピが出ます。</p>
-    <textarea id="rJson" rows="5" style="width:100%;font:12px monospace;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px">${esc(JSON.stringify(RECIPES))}</textarea>
-    <div class="bar" style="margin-top:6px"><button id="rCopy">コピー</button><button id="rLoad">この内容を読み込む</button></div>
+  <div class="card form"><div class="name">データの書き出し・読み込み</div>
+    <p class="small">お気に入り・手入力の値・正式名・取引メモ・レシピをまとめて移せます。機種変更や別の端末で使うときに。</p>
+    <div class="bar"><button id="xCopy">書き出し（コピー）</button><button id="xShow">読み込む</button></div>
+    <textarea id="xJson" rows="4" style="display:none;font:12px monospace" placeholder="書き出した内容を貼り付け"></textarea>
+    <button id="xLoad" class="primary" style="display:none;margin-top:6px;width:100%">この内容で上書き</button>
   </div>
   <div class="card"><div class="name">サーバー一覧（config.json の servers に名前かIDを入れる）</div>
     <table><tr><th>名前</th><th>リージョン</th><th>ID</th></tr>
     ${(INDEX?.all_servers||[]).map(s=>`<tr><td>${esc(s.name)}${s.faction?"・"+esc(s.faction):""}</td><td>${esc(s.region||"")}</td><td>${esc(s.server_id)}</td></tr>`).join("") || `<tr><td colspan="3">一覧がまだありません</td></tr>`}
-    </table><p class="small">データ生成：${INDEX?.generated_at ? ago(INDEX.generated_at) : "—"}。価格は出品中の最安値の観測値で、成約価格ではありません。このサーバーには販売統計がないため、「売れ数」は1時間ごとの出品数の減少から推定しています（取り下げも含むので多めに出ます）。</p></div>`;
+    </table><p class="small">データ生成：${INDEX?.generated_at ? ago(INDEX.generated_at) : "—"}。価格は出品中の最安値の観測値で、成約価格ではありません。このサーバーには販売統計がないため、「売れ数」は1時間ごとの出品数の減少から推定しています（取り下げも含みます）。</p></div>`;
+}
+
+// ── 詳細シート ───────────────────────────────────────
+let SHEET_KEY = null;
+async function openSheet(k){
+  const it = BYKEY[k]; if(!it) return;
+  SHEET_KEY = k;
+  $("#sheet").classList.add("open"); document.body.classList.add("lock");
+  renderSheet(null);
+  try{ const d = await getJSON(`data/s/${SID()}/${k}.json`); if(SHEET_KEY === k) renderSheet(d.h || []); }
+  catch(e){ if(SHEET_KEY === k) renderSheet([]); }
+}
+function closeSheet(){ SHEET_KEY = null; $("#sheet").classList.remove("open"); document.body.classList.remove("lock"); render(); }
+function bigChart(h){
+  if(!h || h.filter(r=>r[1]).length < 2) return `<div class="empty">履歴がまだありません。</div>`;
+  const W = 340, H = 190, P = {l:44, r:30, t:8, b:22};
+  const xs = h.map(r=>r[0]), x0 = Math.min(...xs), x1 = Math.max(...xs);
+  const ps = h.filter(r=>r[1]).map(r=>r[1]), lo = Math.min(...ps), hi = Math.max(...ps);
+  const ls = h.map(r=>r[2]||0), lmax = Math.max(1, ...ls);
+  const X = t => P.l + (x1===x0 ? 0 : (t-x0)/(x1-x0)*(W-P.l-P.r));
+  const Y = v => P.t + (hi===lo ? (H-P.t-P.b)/2 : (1-(v-lo)/(hi-lo))*(H-P.t-P.b));
+  const YL = v => H-P.b - v/lmax*(H-P.t-P.b)*0.35;
+  let bars = "", d = "", pen = false, prev = null;
+  const bw = Math.max(1, (W-P.l-P.r)/Math.max(24, (x1-x0+1)) - 0.5);
+  for(const [t,p,l] of h){
+    bars += `<rect x="${(X(t)-bw/2).toFixed(1)}" y="${YL(l||0).toFixed(1)}" width="${bw.toFixed(1)}" height="${(H-P.b-YL(l||0)).toFixed(1)}" fill="var(--line)"/>`;
+    if(!p || (prev!=null && t-prev>3)){ pen = false; }
+    if(p){ d += (pen?"L":"M") + X(t).toFixed(1) + " " + Y(p).toFixed(1); pen = true; prev = t; }
+  }
+  const ticks = [lo, (lo+hi)/2, hi].map(v=>`<text x="${P.l-4}" y="${(Y(v)+4).toFixed(1)}" text-anchor="end" font-size="10" fill="var(--sub)">${kina(v)}</text><line x1="${P.l}" x2="${W-P.r}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" stroke="var(--line)" stroke-dasharray="2 3"/>`).join("");
+  const days = []; for(let t = Math.ceil(x0/24)*24; t <= x1; t += 24) days.push(t);
+  const dl = days.map(t=>{ const dd = new Date(t*3600000); return `<text x="${X(t).toFixed(1)}" y="${H-6}" text-anchor="middle" font-size="10" fill="var(--sub)">${dd.getMonth()+1}/${dd.getDate()}</text>`; }).join("");
+  const last = h.filter(r=>r[1]).slice(-1)[0];
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}">${bars}${ticks}${dl}
+    <text x="${W-P.r+4}" y="${(YL(lmax)+4).toFixed(1)}" font-size="10" fill="var(--sub)">${lmax}</text>
+    <path d="${d}" fill="none" stroke="var(--blue)" stroke-width="1.8"/>
+    <circle cx="${X(last[0]).toFixed(1)}" cy="${Y(last[1]).toFixed(1)}" r="3" fill="var(--gold)"/></svg>
+    <div class="legend"><span><i style="background:var(--blue)"></i>最安値（1時間ごと）</span><span><i style="background:var(--line);height:8px"></i>出品数</span></div>`;
+}
+function renderSheet(h){
+  const it = BYKEY[SHEET_KEY]; if(!it) return;
+  const m = MANUAL[mkey(it.k)] || {}, f = flipOf(it), mine = ledger(SID()).rows.filter(r=>r.k===it.k).reverse();
+  const hq = holdQty(it.k), hc = holdCost(it.k);
+  $("#sheetBody").innerHTML = `<button class="close" id="shClose">✕</button>
+    ${head(it, "")}
+    <div class="kpi">
+      <div><span>今の最安</span><b>${kina(it.p)}</b></div>
+      <div><span>7日中央値</span><b>${kina(it.m7)}</b></div>
+      <div><span>${it.est?"24h売れ数(推定)":"24h販売"}</span><b>${full(it.s)}</b></div>
+      <div><span>出品数</span><b>${full(it.l)}</b></div>
+      <div><span>7日の最安〜最高</span><b style="font-size:13px">${kina(it.lo7)}〜${kina(it.hi7)}</b></div>
+      <div><span>転売の利益/個</span><b class="${cls(f?.profit)}">${f?signed(f.profit):"—"}</b></div>
+    </div>
+    ${h===null ? `<div class="empty">グラフを読み込み中…</div>` : bigChart(h)}
+    ${hq>0?`<div class="card" style="margin-top:10px">保有 <b>${hq}</b>個 ・ 平均取得 ${full(hc)} ・ 今売ると <b class="${cls((Math.max(1,it.p-1)*netRate()-hc)*hq)}">${signed((Math.max(1,it.p-1)*netRate()-hc)*hq)}</b></div>`:""}
+    <div class="card form" style="margin-top:10px"><div class="name">📝 ゲーム内の値を記録</div>
+      <p class="small">マーケットの購入画面に出る値を写してください。${m.at?`前回：${ago(m.at)}`:""}</p>
+      <div class="two"><div><label>直近の取引価格</label><input id="mLast" inputmode="numeric" value="${m.last||""}"></div>
+      <div><label>28日平均</label><input id="mAvg" inputmode="numeric" value="${m.avg||""}"></div></div>
+      <div class="two"><div><label>28日の最安</label><input id="mLo" inputmode="numeric" value="${m.lo||""}"></div>
+      <div><label>28日の最高</label><input id="mHi" inputmode="numeric" value="${m.hi||""}"></div></div>
+      <label>正式名（ゲーム内の日本語名。入れると直訳と置き換わります）</label><input id="mName" value="${esc(OFFICIAL[it.k]||"")}" placeholder="${esc(it.tr||it.en)}">
+      <div class="bar" style="margin-top:8px"><button class="primary" id="mSave">保存</button>${m.at?`<button id="mClear">値を消す</button>`:""}</div>
+    </div>
+    <div class="card"><div class="name">取引メモ</div>
+      <div class="bar" style="margin-top:6px"><button id="qBuy">今の最安で買った</button><button id="qSell">売れた</button></div>
+      ${mine.length?`<table>${mine.slice(0,10).map(r=>`<tr><td><span class="tag ${r.type==="buy"?"":"good"}">${r.type==="buy"?"買い":"売り"}</span> ${dt(r.at)}</td><td>×${r.qty}</td><td>${full(r.price)}</td><td class="${cls(r.profit)}">${r.type==="sell"?signed(r.profit):""}</td></tr>`).join("")}</table>`:`<p class="small">この品の記録はまだありません。</p>`}
+    </div>`;
+  bindAll($("#sheetBody"));
+  $("#shClose").onclick = closeSheet;
+  $("#mSave").onclick = () => {
+    const last = parseNum($("#mLast").value), avg = parseNum($("#mAvg").value), lo = parseNum($("#mLo").value), hi = parseNum($("#mHi").value);
+    const nm = $("#mName").value.trim();
+    if(nm) OFFICIAL[it.k] = nm; else delete OFFICIAL[it.k];
+    LS.set("official", OFFICIAL);
+    if(last || avg){
+      if(!last){ alert("直近の取引価格を入れてください"); return; }
+      MANUAL[mkey(it.k)] = {last, avg, lo, hi, at:new Date().toISOString()};
+      LS.set("manual", MANUAL);
+    }
+    applyNames(it); refreshDatalist();
+    renderSheet(h);
+    $("#mSave").textContent = "保存しました";
+  };
+  const mc = $("#mClear"); if(mc) mc.onclick = () => { delete MANUAL[mkey(it.k)]; LS.set("manual", MANUAL); renderSheet(h); };
+  const go = type => { closeSheet(); TAB = "log"; LS.set("tab", TAB); LS.set("tradeEdit", null);
+    LS.set("tradePref", {type, k:it.k, qty:1, price: type==="buy" ? (it.p||"") : (manualOf(it)?.last || (it.p?it.p-1:""))}); render(); $("#tradeBox").open = true; $("#tPrice").focus(); };
+  $("#qBuy").onclick = () => go("buy");
+  $("#qSell").onclick = () => go("sell");
 }
 
 // ── 描画とイベント ───────────────────────────────────
 function render(){
   document.querySelectorAll("#tabs button").forEach(b=>b.classList.toggle("on", b.dataset.tab===TAB));
-  const needData = ["flip","sell","craft"].includes(TAB);
   const m = $("#main");
-  if(needData && !DATA){ m.innerHTML = `<div class="empty">データがありません。設定タブでサーバー一覧を確認し、config.json に自分のサーバーを入れてください。</div>`; return; }
-  m.innerHTML = {flip:viewFlip, sell:viewSell, craft:viewCraft, quna:viewQuna, settings:viewSettings}[TAB]();
-  bind();
+  if(TAB !== "quna" && TAB !== "settings" && !DATA){ m.innerHTML = `<div class="empty">データがありません。設定タブでサーバー一覧を確認し、config.json に自分のサーバーを入れてください。</div>`; return; }
+  m.innerHTML = {flip:viewFlip, move:viewMove, sell:viewSell, log:viewLog, craft:viewCraft, quna:viewQuna, settings:viewSettings}[TAB]();
+  bindAll(m); bindTab();
+}
+function bindAll(root){
+  root.querySelectorAll("[data-star]").forEach(b=>b.onclick=e=>{
+    e.stopPropagation(); const k = b.dataset.star;
+    if(FAVS[k]) delete FAVS[k]; else FAVS[k] = true;
+    LS.set("favs", FAVS); b.classList.toggle("on", !!FAVS[k]); b.textContent = FAVS[k] ? "★" : "☆";
+  });
+  root.querySelectorAll("[data-open]").forEach(c=>c.onclick=e=>{ if(e.target.closest("button,input,select,a")) return; openSheet(c.dataset.open); });
+  root.querySelectorAll("[data-sec]").forEach(b=>b.onclick=()=>{ CAT = {sec:b.dataset.sec, c:""}; LS.set("cat",CAT); render(); });
+  root.querySelectorAll("[data-c]").forEach(b=>b.onclick=()=>{ CAT.c = b.dataset.c; LS.set("cat",CAT); render(); });
 }
 function saveSettings(){ LS.set("settings", S); }
-function bind(){
-  document.querySelectorAll("[data-sec]").forEach(b=>b.onclick=()=>{ CAT = {sec:b.dataset.sec, c:""}; LS.set("cat",CAT); render(); });
-  document.querySelectorAll("[data-c]").forEach(b=>b.onclick=()=>{ CAT.c = b.dataset.c; LS.set("cat",CAT); render(); });
+function bindTab(){
   const fs = $("#flipSort"); if(fs){ fs.value = S.flipSort; fs.onchange = () => { S.flipSort = fs.value; saveSettings(); render(); }; }
-  const sq = $("#sellQ"); if(sq){ let t; sq.oninput = () => { clearTimeout(t); t = setTimeout(()=>{ LS.set("sellQ", sq.value); const pos = sq.selectionStart; render(); const n=$("#sellQ"); n.focus(); n.setSelectionRange(pos,pos); }, 250); }; }
+  const fm = $("#flipManual"); if(fm) fm.onclick = () => { UI.flipManualOnly = !UI.flipManualOnly; saveUI(); render(); };
+  document.querySelectorAll("[data-dir]").forEach(b=>b.onclick=()=>{ UI.moveDir = b.dataset.dir; saveUI(); render(); });
+  document.querySelectorAll("[data-basis]").forEach(b=>b.onclick=()=>{ UI.moveBasis = b.dataset.basis; saveUI(); render(); });
+  document.querySelectorAll("[data-range]").forEach(b=>b.onclick=()=>{ UI.logRange = b.dataset.range; saveUI(); render(); });
+  const sq = $("#sellQ"); if(sq){ let t; sq.oninput = () => { clearTimeout(t); t = setTimeout(()=>{ LS.set("sellQ", sq.value); const pos = sq.selectionStart; render(); const n=$("#sellQ"); n.focus(); n.setSelectionRange(pos,pos); }, 300); }; }
+  // 取引メモ
+  const pref = LS.get("tradePref", null);
+  if(pref && $("#tradeForm")){ LS.set("tradePref", null); $("#tradeForm").outerHTML = tradeForm(pref); }
+  bindTradeForm();
+  document.querySelectorAll("[data-tdel]").forEach(b=>b.onclick=()=>{ if(confirm("この記録を削除しますか？")){ TRADES = TRADES.filter(t=>t.id!==b.dataset.tdel); saveTrades(); render(); } });
+  document.querySelectorAll("[data-tedit]").forEach(b=>b.onclick=()=>{ LS.set("tradeEdit", b.dataset.tedit); render(); $("#tradeBox").scrollIntoView({behavior:"smooth"}); });
   // 製作
   document.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{ if(confirm("このレシピを削除しますか？")){ RECIPES.splice(+b.dataset.del,1); LS.set("recipes",RECIPES); LS.set("editing",null); render(); } });
-  document.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>{ LS.set("editing", +b.dataset.edit); render(); setTimeout(()=>$("#rName")?.scrollIntoView({behavior:"smooth",block:"center"}),50); });
+  document.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>{ LS.set("editing", +b.dataset.edit); render(); });
   const am = $("#rAddMat"); if(am) am.onclick = () => { const d = document.createElement("div"); d.className="mat"; d.innerHTML=`<input class="mName" list="itemlist" placeholder="素材名"><input class="mQty" type="number" min="1" value="1"><button class="mDel" type="button">×</button>`; $("#rMats").appendChild(d); bindMatDel(); };
   bindMatDel();
   const rc = $("#rCancel"); if(rc) rc.onclick = () => { LS.set("editing", null); render(); };
@@ -413,7 +711,7 @@ function bind(){
     const mats = [], bad = [];
     document.querySelectorAll("#rMats .mat").forEach(row=>{
       const v = row.querySelector(".mName").value.trim(); if(!v) return;
-      const k = pickKey(v); const q = Math.max(1, parseInt(row.querySelector(".mQty").value)||1);
+      const k = pickKey(v), q = Math.max(1, parseInt(row.querySelector(".mQty").value)||1);
       if(k) mats.push({key:k, qty:q}); else bad.push(v);
     });
     if(bad.length){ alert("候補にない素材があります：" + bad.join("、")); return; }
@@ -431,13 +729,62 @@ function bind(){
   // 設定
   const ss = $("#sSave"); if(ss) ss.onclick = () => {
     const g = id => parseFloat($(id).value);
-    S.tax = g("#sTax"); S.fee = g("#sFee"); S.minSold = g("#sMinSold"); S.minMargin = g("#sMinMargin"); S.minProfit = g("#sMinProfit");
-    for(const k of ["tax","fee","minSold","minMargin","minProfit"]) if(!isFinite(S[k])) S[k] = DEFAULTS[k];
+    S.tax = g("#sTax"); S.fee = g("#sFee"); S.minSold = g("#sMinSold"); S.minMargin = g("#sMinMargin"); S.minProfit = g("#sMinProfit"); S.staleDays = g("#sStale");
+    for(const k of ["tax","fee","minSold","minMargin","minProfit","staleDays"]) if(!isFinite(S[k])) S[k] = DEFAULTS[k];
     S.conservative = $("#sCons").checked; saveSettings(); ss.textContent = "保存しました"; setTimeout(()=>render(), 700);
   };
   const sr = $("#sReset"); if(sr) sr.onclick = () => { const y = S.yenPerQuna; S = Object.assign({}, DEFAULTS, {yenPerQuna:y}); saveSettings(); render(); };
-  const cp = $("#rCopy"); if(cp) cp.onclick = async () => { try{ await navigator.clipboard.writeText($("#rJson").value); cp.textContent="コピーしました"; }catch(e){ $("#rJson").select(); } };
-  const rl = $("#rLoad"); if(rl) rl.onclick = () => { try{ const v = JSON.parse($("#rJson").value); if(!Array.isArray(v)) throw 0; RECIPES = v; LS.set("recipes",RECIPES); rl.textContent="読み込みました"; }catch(e){ alert("JSONの形式が正しくありません"); } };
+  const xc = $("#xCopy"); if(xc) xc.onclick = async () => {
+    const data = JSON.stringify({v:1, favs:FAVS, manual:MANUAL, official:OFFICIAL, trades:TRADES, recipes:RECIPES, chests:CHESTS});
+    try{ await navigator.clipboard.writeText(data); xc.textContent = "コピーしました"; }
+    catch(e){ const t = $("#xJson"); t.style.display = "block"; t.value = data; t.select(); xc.textContent = "表示した内容をコピーしてください"; }
+  };
+  const xs = $("#xShow"); if(xs) xs.onclick = () => { $("#xJson").style.display = "block"; $("#xJson").value = ""; $("#xLoad").style.display = "block"; $("#xJson").focus(); };
+  const xl = $("#xLoad"); if(xl) xl.onclick = () => {
+    try{
+      const d = JSON.parse($("#xJson").value);
+      if(!d || typeof d !== "object") throw 0;
+      if(!confirm("今のお気に入り・手入力・取引メモ・レシピを、この内容で上書きします。よろしいですか？")) return;
+      if(d.favs) FAVS = d.favs; if(d.manual) MANUAL = d.manual; if(d.official) OFFICIAL = d.official;
+      if(Array.isArray(d.trades)) TRADES = d.trades; if(Array.isArray(d.recipes)) RECIPES = d.recipes; if(Array.isArray(d.chests)) CHESTS = d.chests;
+      LS.set("favs",FAVS); LS.set("manual",MANUAL); LS.set("official",OFFICIAL); saveTrades(); LS.set("recipes",RECIPES); LS.set("chests",CHESTS);
+      for(const it of ITEMS) applyNames(it); refreshDatalist();
+      xl.textContent = "読み込みました"; setTimeout(render, 700);
+    }catch(e){ alert("内容の形式が正しくありません"); }
+  };
+}
+function bindTradeForm(){
+  const f = $("#tradeForm"); if(!f) return;
+  f.querySelectorAll("[data-ttype]").forEach(b=>b.onclick=()=>{
+    const cur = readTrade(true); cur.type = b.dataset.ttype; f.outerHTML = tradeForm(cur); bindTradeForm();
+  });
+  const pv = () => {
+    const t = readTrade(true); let s = "";
+    if(t.qty && t.price){
+      if(t.type==="buy") s = `支払い ${full(t.price*t.qty + (t.extra||0))} キナ`;
+      else s = `手取り ${full(t.price*t.qty*netRate() - (t.extra||0))} キナ（税${S.tax}%・手数料${S.fee}%を差し引き）`;
+    }
+    $("#tPreview").textContent = s;
+  };
+  ["#tQty","#tPrice","#tExtra"].forEach(id=>{ const e = $(id); if(e) e.oninput = pv; });
+  pv();
+  $("#tSave").onclick = () => {
+    const t = readTrade(false); if(!t) return;
+    const i = TRADES.findIndex(x=>x.id===t.id);
+    if(i>=0) TRADES[i] = t; else TRADES.push(t);
+    saveTrades(); LS.set("tradeEdit", null); render();
+  };
+  const c = $("#tCancel"); if(c) c.onclick = () => { LS.set("tradeEdit", null); render(); };
+}
+function readTrade(loose){
+  const k = pickKey($("#tItem").value), qty = Math.max(1, parseInt($("#tQty").value)||1), price = parseNum($("#tPrice").value);
+  const atv = $("#tAt").value, at = atv ? new Date(atv).toISOString() : new Date().toISOString();
+  const t = {id: $("#tId").value || ("t"+Date.now().toString(36)+Math.random().toString(36).slice(2,6)), sid: SID(), k: k || "", type: $("#tType").value, qty, price: price ?? "", extra: parseNum($("#tExtra").value) || 0, at};
+  if(t.type === "sell"){ t.tax = S.tax; t.fee = S.fee; }
+  if(loose) return t;
+  if(!k){ alert("アイテムを候補から選んでください"); return null; }
+  if(!price || price <= 0){ alert("単価を入れてください"); return null; }
+  return t;
 }
 function bindMatDel(){ document.querySelectorAll(".mDel").forEach(b=>b.onclick=()=>{ const rows=document.querySelectorAll("#rMats .mat"); if(rows.length>1) b.parentElement.remove(); else b.parentElement.querySelector(".mName").value=""; }); }
 boot();

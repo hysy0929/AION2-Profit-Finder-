@@ -146,6 +146,8 @@ def norm_item(r: dict) -> dict | None:
         "a": num(r.get("sold_avg_price")),   # 24時間の販売平均単価
         "t": r.get("captured_at"),
         "ic": icon_of(r),
+        "chA": num(r.get("change_pct")),
+        "chB": num(r.get("change_basis_seconds")),
         "g": r.get("grade") or r.get("rarity") or r.get("quality"),
     }
 
@@ -247,6 +249,11 @@ class History:
         if len(ls) >= 2:
             out["s"] = int(sum(max(0, x - y) for x, y in zip(ls, ls[1:])))  # 出品数の減少合計
             out["sh"] = len(ls)  # 何時間分のデータで数えたか
+        cur = rows.get(now_h, [None])[0] or rows.get(now_h - 1, [None])[0]
+        for label, back in (("ch6", 6), ("ch24", 24)):
+            past = [rows[h][0] for h in range(now_h - back - 2, now_h - back + 3) if h in rows and rows[h][0]]
+            if cur and past:
+                out[label] = round(cur / statistics.median(past) - 1, 4)
         spark = []
         for start in range(now_h - days * 24 + 1, now_h + 1, 12):
             v = [rows[h][0] for h in range(start, start + 12) if h in rows and rows[h][0]]
@@ -430,6 +437,12 @@ def build_server(api: Api, server: dict, cfg: dict, rkeys: set[str], out: Path, 
     (out / "s").mkdir(parents=True, exist_ok=True)
     (out / "s" / f"{sid}.json").write_text(json.dumps(doc, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     (out / "s" / f"{sid}_h.json").write_text(json.dumps(hist.dump(), separators=(",", ":")), encoding="utf-8")
+    # 詳細画面用：アイテムごとの1時間ごとの最安値と出品数
+    idir = out / "s" / str(sid)
+    idir.mkdir(parents=True, exist_ok=True)
+    for k, rows in hist.d.items():
+        (idir / f"{k}.json").write_text(json.dumps({"h": [[h, v[0], v[1]] for h, v in sorted(rows.items())]},
+                                                   separators=(",", ":")), encoding="utf-8")
     remain = max(0, len(thin) - cfg["history_budget_per_server"])
     print(f"{server.get('name')}({sid}): {len(items)}品目、履歴の補完 {got}件（残り{remain}件は次回以降）")
     return {**server, "items": len(items), "captured_at": captured}
@@ -505,6 +518,27 @@ def main() -> int:
     except Exception as e:
         print(f"日本語名の取得でエラー：{e}", file=sys.stderr)
     (out / "names.json").write_text(json.dumps(names, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+
+    # 直訳辞書（リポジトリの names_ja.json）を公開側へコピーし、未訳の英語名一覧を書き出す
+    ja = {}
+    src = ROOT / "names_ja.json"
+    if src.exists():
+        try:
+            ja = json.loads(src.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as e:
+            print(f"names_ja.json を読めません: {e}", file=sys.stderr)
+    (out / "names_ja.json").write_text(json.dumps(ja, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+    en: dict[str, str] = {}
+    for s in done:
+        try:
+            doc = json.loads((out / "s" / f"{s['server_id']}.json").read_text(encoding="utf-8"))
+            for it in doc["items"]:
+                if it["k"] not in ja:
+                    en.setdefault(it["k"], it["n"])
+        except (OSError, KeyError, json.JSONDecodeError):
+            pass
+    (out / "names_todo.txt").write_text("".join(f"{k}\t{v}\n" for k, v in sorted(en.items(), key=lambda x: x[1])), encoding="utf-8")
+    print(f"直訳辞書 {len(ja)}件、未訳 {len(en)}件")
     return 0 if (done or not targets) else 1
 
 
