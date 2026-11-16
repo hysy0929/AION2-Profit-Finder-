@@ -187,71 +187,95 @@ def dump_debug(api: Api, sid, out: Path) -> None:
     (out / "debug.json").write_text(json.dumps(dbg, ensure_ascii=False, indent=1, default=str)[:60000], encoding="utf-8")
 
 
-def fetch_history(api: Api, sid, key: str, days: int) -> list[tuple[datetime, float]]:
+def fetch_history(api: Api, sid, key: str, days: int) -> list[tuple[int, float | None, float | None]]:
+    """aion2.exchange の1時間ごとの履歴（最安値と出品数）。戻り値は (時刻番号, 最安値, 出品数)。"""
     since = (datetime.now(timezone.utc) - timedelta(days=days)).strftime("%Y-%m-%dT%H:%M:%SZ")
-    j = api.get(f"/api/items/{urllib.parse.quote(key)}/prices", {"server": sid, "bucket": "raw", "from": since}) or {}
+    j = api.get(f"/api/items/{urllib.parse.quote(key)}/prices", {"server": sid, "bucket": "1h", "from": since}) or {}
     pts = []
     for pt in j.get("points") or []:
         t = parse_ts(pt.get("ts"))
+        if not t:
+            continue
         p = num(pt.get("low", pt.get("price")))
-        if t and p and p > 0:
-            pts.append((t, p))
-    return sorted(pts)
+        pts.append((int(t.timestamp() // 3600), p if p and p > 0 else None, num(pt.get("listings_min", pt.get("listings")))))
+    return pts
 
 
-def summarize_history(pts: list[tuple[datetime, float]], days: int, now: datetime) -> dict:
-    """1時間ごとの最安値にまとめて、中央値・最小・最大と、半日ごとのミニチャートを作る。"""
-    if not pts:
-        return {}
-    hourly: dict[int, float] = {}
-    for t, p in pts:
-        h = int(t.timestamp() // 3600)
-        hourly[h] = min(p, hourly.get(h, p))
-    vals = list(hourly.values())
-    end = int(now.timestamp() // 3600)
-    step = 12
-    spark = []
-    for start in range(end - days * 24 + 1, end + 1, step):
-        v = [hourly[h] for h in range(start, start + step) if h in hourly]
-        spark.append(round(min(v)) if v else None)
-    return {
-        "m7": round(statistics.median(vals)),
-        "lo7": round(min(vals)),
-        "hi7": round(max(vals)),
-        "n7": len(vals),
-        "sp": spark,
-    }
+# ── 自前の履歴（毎時の最安値と出品数を7日分ためる） ─────────────────────────
+# aion2.exchange はこのサーバーの販売統計を持っていない（units_sold が常に空）。
+# そこで出品数の推移を毎時記録し、「出品数が減った件数」を販売の目安にする（取り下げも含む）。
 
 
-# ── 候補選び（履歴を取りに行くアイテム） ───────────────────────────────────
+class History:
+    def __init__(self, prev: dict | None, keep_hours: int):
+        self.keep = keep_hours
+        self.d: dict[str, dict[int, list]] = {}
+        for k, rows in ((prev or {}).get("items") or {}).items():
+            self.d[k] = {int(h): [p, l] for h, p, l in rows}
+
+    def put(self, k: str, h: int, p, l, overwrite=True):
+        cur = self.d.setdefault(k, {})
+        if overwrite or h not in cur:
+            cur[h] = [p, l]
+
+    def count(self, k: str) -> int:
+        return len(self.d.get(k) or {})
+
+    def trim(self, now_h: int):
+        lo = now_h - self.keep
+        for k in list(self.d):
+            self.d[k] = {h: v for h, v in self.d[k].items() if h > lo}
+            if not self.d[k]:
+                del self.d[k]
+
+    def dump(self) -> dict:
+        return {"items": {k: [[h, v[0], v[1]] for h, v in sorted(rows.items())] for k, rows in self.d.items()}}
+
+    def features(self, k: str, now_h: int, days: int) -> dict:
+        rows = self.d.get(k) or {}
+        if not rows:
+            return {}
+        out: dict = {}
+        lows = [v[0] for v in rows.values() if v[0]]
+        if lows:
+            out.update(m7=round(statistics.median(lows)), lo7=round(min(lows)), hi7=round(max(lows)), n7=len(lows))
+        day = [rows[h] for h in sorted(rows) if h > now_h - 24]
+        day_lows = [v[0] for v in day if v[0]]
+        if day_lows:
+            out["a"] = round(statistics.median(day_lows))  # 24時間の最安値の中央値
+        ls = [v[1] for v in day if v[1] is not None]
+        if len(ls) >= 2:
+            out["s"] = int(sum(max(0, x - y) for x, y in zip(ls, ls[1:])))  # 出品数の減少合計
+            out["sh"] = len(ls)  # 何時間分のデータで数えたか
+        spark = []
+        for start in range(now_h - days * 24 + 1, now_h + 1, 12):
+            v = [rows[h][0] for h in range(start, start + 12) if h in rows and rows[h][0]]
+            spark.append(round(min(v)) if v else None)
+        out["sp"] = spark
+        return out
 
 
-def choose_candidates(items: list[dict], cfg: dict, recipe_keys: set[str]) -> list[str]:
-    net = 1 - cfg["tax_rate"] - cfg["fee_rate"]
+def load_prev_json(url: str | None):
+    if not url:
+        return None
+    try:
+        req = urllib.request.Request(url + ("&" if "?" in url else "?") + f"t={int(time.time())}", headers={"User-Agent": UA})
+        with urllib.request.urlopen(req, timeout=30) as r:
+            return json.load(r)
+    except Exception as e:  # 初回は404
+        print(f"前回データなし（{url}: {e}）")
+        return None
 
-    def flip(it):
-        if not it["p"] or not it["a"] or not it["s"]:
-            return -1
-        return (it["a"] * net - it["p"]) * min(it["s"], 20)
 
-    def volume(it):
-        return (it["s"] or 0) * (it["a"] or it["p"] or 0)
-
-    order: list[str] = []
-    for it in sorted(items, key=flip, reverse=True)[: cfg["candidates_flip"]]:
-        if flip(it) > 0:
-            order.append(it["k"])
-    for it in sorted(items, key=volume, reverse=True)[: cfg["candidates_volume"]]:
-        if volume(it) > 0:
-            order.append(it["k"])
-    have = {it["k"] for it in items}
-    order += [k for k in recipe_keys if k in have]
-    seen, out = set(), []
-    for k in order:
-        if k not in seen:
-            seen.add(k)
-            out.append(k)
-    return out[: cfg["history_budget_per_server"]]
+def pages_base() -> str | None:
+    """GitHub Actions 上なら公開ページのURL（末尾 /）。"""
+    repo = os.environ.get("GITHUB_REPOSITORY")
+    if not repo or "/" not in repo:
+        return None
+    owner, name = repo.split("/", 1)
+    if name.lower() == f"{owner.lower()}.github.io":
+        return f"https://{owner.lower()}.github.io/"
+    return f"https://{owner.lower()}.github.io/{name}/"
 
 
 def recipe_keys() -> set[str]:
@@ -360,33 +384,54 @@ def fill_names(keys: list[str], names: dict, limit: int) -> str:
 # ── メイン ───────────────────────────────────────────────────────────────
 
 
-def build_server(api: Api, server: dict, cfg: dict, rkeys: set[str], out: Path) -> dict:
+def build_server(api: Api, server: dict, cfg: dict, rkeys: set[str], out: Path, prev_base: str | None) -> dict:
     sid = server["server_id"]
     now = datetime.now(timezone.utc)
-    items = [x for x in (norm_item(r) for r in fetch_items(api, sid)) if x]
-    cands = choose_candidates(items, cfg, rkeys)
-    by_key = {it["k"]: it for it in items}
+    now_h = int(now.timestamp() // 3600)
+    days = cfg["history_days"]
+    hist = History(load_prev_json(prev_base and f"{prev_base}data/s/{sid}_h.json"), days * 24)
+    raw = fetch_items(api, sid)
+    items = [x for x in (norm_item(r) for r in raw) if x]
+
+    # 今回の観測を記録（出品なしは出品数0として記録）
+    for it in items:
+        t = parse_ts(it["t"])
+        h = int(t.timestamp() // 3600) if t else now_h
+        if it["p"] and h >= now_h - 2:
+            hist.put(it["k"], h, it["p"], it["l"] or 0)
+        else:
+            hist.put(it["k"], now_h, None, 0)
+
+    # 自前の記録が薄い品目は、aion2.exchange の履歴で埋める（出品の多い順、1回あたり上限あり）
+    thin = [it for it in items if hist.count(it["k"]) < 24 and (it["l"] or 0) > 0]
+    thin.sort(key=lambda it: (it["k"] not in rkeys, -(it["l"] or 0)))
     got = 0
-    for k in cands:
+    for it in thin[: cfg["history_budget_per_server"]]:
         try:
-            summ = summarize_history(fetch_history(api, sid, k, cfg["history_days"]), cfg["history_days"], now)
-        except RuntimeError as e:
-            print(f"履歴 {sid}/{k}: {e}", file=sys.stderr)
-            continue
-        if summ:
-            by_key[k].update(summ)
+            for h, p, l in fetch_history(api, sid, it["k"], days):
+                hist.put(it["k"], h, p, l, overwrite=False)
             got += 1
+        except RuntimeError as e:
+            print(f"履歴 {sid}/{it['k']}: {e}", file=sys.stderr)
+    hist.trim(now_h)
+
+    for it in items:
+        api_s, api_a = it["s"], it["a"]
+        f = hist.features(it["k"], now_h, days)
+        it.update(f)
+        if api_s is not None:  # 公式な販売統計があればそちらを優先
+            it["s"], it["a"], it["est"] = api_s, api_a or it.get("a"), False
+        else:
+            it["est"] = True
+
     captured = max((it["t"] or "" for it in items), default="") or None
-    doc = {
-        "server": server,
-        "generated_at": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "captured_at": captured,
-        "history_days": cfg["history_days"],
-        "items": items,
-    }
+    doc = {"server": server, "generated_at": now.strftime("%Y-%m-%dT%H:%M:%SZ"), "captured_at": captured,
+           "history_days": days, "items": items}
     (out / "s").mkdir(parents=True, exist_ok=True)
     (out / "s" / f"{sid}.json").write_text(json.dumps(doc, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
-    print(f"{server.get('name')}({sid}): {len(items)}品目、履歴 {got}/{len(cands)}件")
+    (out / "s" / f"{sid}_h.json").write_text(json.dumps(hist.dump(), separators=(",", ":")), encoding="utf-8")
+    remain = max(0, len(thin) - cfg["history_budget_per_server"])
+    print(f"{server.get('name')}({sid}): {len(items)}品目、履歴の補完 {got}件（残り{remain}件は次回以降）")
     return {**server, "items": len(items), "captured_at": captured}
 
 
@@ -399,6 +444,8 @@ def main() -> int:
     ap.add_argument("--list-servers", action="store_true")
     ap.add_argument("--prev-names", default=os.environ.get("PREV_NAMES_URL") or default_prev_names_url(), help="前回公開した names.json のURL")
     ap.add_argument("--names-per-run", type=int, default=400)
+    ap.add_argument("--prev-base", help="前回公開分のURL（末尾/）。省略時はGitHub Actionsから自動")
+    ap.add_argument("--debug", action="store_true", help="APIの返り値サンプルを debug.json に出す")
     a = ap.parse_args()
 
     cfg = {"servers": [], "history_days": 7, "history_budget_per_server": 80, "candidates_flip": 40,
@@ -421,7 +468,8 @@ def main() -> int:
         print(f"config.json の servers {cfg['servers']} に一致するサーバーがありません。--list-servers で確認してください。", file=sys.stderr)
 
     rkeys = recipe_keys()
-    if targets:
+    base = a.prev_base if a.prev_base is not None else pages_base()
+    if a.debug and targets:
         try:
             dump_debug(api, targets[0]["server_id"], out)
         except Exception as e:
@@ -429,7 +477,7 @@ def main() -> int:
     done = []
     for s in targets:
         try:
-            done.append(build_server(api, s, cfg, rkeys, out))
+            done.append(build_server(api, s, cfg, rkeys, out, base))
         except RuntimeError as e:
             print(f"{s.get('name')}: 取得失敗 {e}", file=sys.stderr)
 

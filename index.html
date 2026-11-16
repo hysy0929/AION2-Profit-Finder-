@@ -227,7 +227,7 @@ function viewFlip(){
   rows.sort((a,b)=>key(b)-key(a));
   let h = `<p class="hint">今の最安出品を買い、売れている価格で出し直したときに、税${S.tax}%・出品手数料${S.fee}%を引いても利益が残るものです。</p>
   ${catBar()}<div class="bar"><select id="flipSort">
-    <option value="daily">並び：販売数込みの利益見込み</option><option value="unit">並び：1個あたり利益</option><option value="margin">並び：利益率</option>
+    <option value="daily">並び：売れ数込みの利益見込み</option><option value="unit">並び：1個あたり利益</option><option value="margin">並び：利益率</option>
   </select></div>`;
   if(!rows.length) h += `<div class="empty">条件に合う品はありません。<br>設定タブでしきい値を下げると増えます。</div>`;
   for(const [it,f] of rows.slice(0,60)){
@@ -236,7 +236,7 @@ function viewFlip(){
     if(it.lo7 != null && it.p < it.lo7) tags.push(`<span class="tag good">7日の最安値を更新</span>`);
     if(it.m7 && it.p < it.m7*0.5) tags.push(`<span class="tag warn">相場の半額以下・誤出品かも</span>`);
     if(it.l != null && it.l <= 2) tags.push(`<span class="tag warn">出品${it.l}件のみ</span>`);
-    if(it.s >= 20) tags.push(`<span class="tag good">よく売れる</span>`);
+    if(it.s >= 20) tags.push(`<span class="tag good">よく動く</span>`);
     h += `<div class="card">
       <div class="row"><div class="hd">${iconOf(it)}<div><div class="name">${esc(it.n)}</div><div class="cat">${sub(it)}</div></div></div>
         <div class="right"><div class="big up">+${kina(f.profit)}</div><div class="small">1個あたり（${pct(f.margin)}）</div></div></div>
@@ -244,9 +244,9 @@ function viewFlip(){
         <span>買う（最安）</span><span>${full(it.p)}</span>
         <span>売る目安</span><span>${full(f.ref)}</span>
         <span>手取り/個</span><span>${full(f.ref*netRate())}</span>
-        <span>24h販売 / 出品</span><span>${full(it.s)}個 / ${full(it.l)}件</span>
+        <span>${it.est?"24h売れ数(推定)":"24h販売"} / 出品</span><span>${full(it.s)} / ${full(it.l)}件</span>
         <span>7日中央値</span><span>${full(it.m7)}</span>
-        <span>利益×24h販売数<br><span class="small">（20個まで）</span></span><span class="gold">${kina(f.daily)}</span>
+        <span>利益×24h売れ数<br><span class="small">（20個まで）</span></span><span class="gold">${kina(f.daily)}</span>
       </div>${spark(it.sp)}<div class="tags">${tags.join("")}</div></div>`;
   }
   return h;
@@ -274,8 +274,8 @@ function viewSell(){
       <div class="grid">
         <span>出品価格の目安</span><span>${full(ask)}</span>
         <span>今の最安</span><span>${full(it.p)}</span>
-        <span>24h販売平均</span><span>${full(it.a)}</span>
-        <span>24h販売 / 出品</span><span>${full(it.s)}個 / ${full(it.l)}件</span>
+        <span>${it.est?"24h相場(最安の中央値)":"24h販売平均"}</span><span>${full(it.a)}</span>
+        <span>${it.est?"24h売れ数(推定)":"24h販売"} / 出品</span><span>${full(it.s)} / ${full(it.l)}件</span>
       </div>${spark(it.sp)}<div class="tags">${st}</div></div>`;
   }
   return h;
@@ -370,9 +370,9 @@ function viewSettings(){
   return `<div class="card form">
     <div class="two"><div>${num("sTax","販売税（%）",S.tax,"0.5")}</div><div>${num("sFee","出品手数料（%）",S.fee,"0.5")}</div></div>
     <p class="small">税率はマーケット画面の右上に出ます。サーバー間マーケットが始まったらそちらの税率に変えてください。</p>
-    <div class="two"><div>${num("sMinSold","24h販売数の下限（個）",S.minSold)}</div><div>${num("sMinMargin","利益率の下限（%）",S.minMargin)}</div></div>
+    <div class="two"><div>${num("sMinSold","24h売れ数の下限",S.minSold)}</div><div>${num("sMinMargin","利益率の下限（%）",S.minMargin)}</div></div>
     ${num("sMinProfit","1個あたり利益の下限（キナ）",S.minProfit,"1000")}
-    <label><input id="sCons" type="checkbox" ${S.conservative?"checked":""} style="width:auto"> 慎重モード（売値は24h販売平均と7日中央値の低いほうで計算）</label>
+    <label><input id="sCons" type="checkbox" ${S.conservative?"checked":""} style="width:auto"> 慎重モード（売値は24h相場と7日中央値の低いほうで計算）</label>
     <div class="bar" style="margin-top:10px"><button class="primary" id="sSave">保存</button><button id="sReset">初期値に戻す</button></div>
   </div>
   <div class="card form"><div class="name">レシピの書き出し・読み込み</div>
@@ -383,7 +383,7 @@ function viewSettings(){
   <div class="card"><div class="name">サーバー一覧（config.json の servers に名前かIDを入れる）</div>
     <table><tr><th>名前</th><th>リージョン</th><th>ID</th></tr>
     ${(INDEX?.all_servers||[]).map(s=>`<tr><td>${esc(s.name)}${s.faction?"・"+esc(s.faction):""}</td><td>${esc(s.region||"")}</td><td>${esc(s.server_id)}</td></tr>`).join("") || `<tr><td colspan="3">一覧がまだありません</td></tr>`}
-    </table><p class="small">データ生成：${INDEX?.generated_at ? ago(INDEX.generated_at) : "—"}。価格は出品中の最安値の観測値で、成約価格ではありません。販売数はサイト側の推定です。</p></div>`;
+    </table><p class="small">データ生成：${INDEX?.generated_at ? ago(INDEX.generated_at) : "—"}。価格は出品中の最安値の観測値で、成約価格ではありません。このサーバーには販売統計がないため、「売れ数」は1時間ごとの出品数の減少から推定しています（取り下げも含むので多めに出ます）。</p></div>`;
 }
 
 // ── 描画とイベント ───────────────────────────────────
